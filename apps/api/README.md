@@ -31,6 +31,9 @@ Install the backend dependencies inside the active environment:
 python -m pip install -r requirements.txt
 ```
 
+The database stack uses SQLAlchemy for Python data access, Alembic for schema
+versioning, and Psycopg as the PostgreSQL driver.
+
 Run the development server:
 
 ```bash
