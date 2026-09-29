@@ -30,3 +30,11 @@ Install the backend dependencies inside the active environment:
 ```bash
 python -m pip install -r requirements.txt
 ```
+
+Run the development server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at `http://localhost:8000`, with interactive documentation at `/docs` and a health check at `/health`.
