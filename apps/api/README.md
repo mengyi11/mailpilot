@@ -53,3 +53,29 @@ cp .env.example .env
 The committed template contains safe development defaults only. Never add email content, OAuth tokens, client secrets, or API keys to `.env.example` or application logs.
 
 `CORS_ORIGINS` is a JSON list of browser origins allowed to call the API. Production deployments must replace the localhost value with the deployed MailPilot frontend domain.
+
+`DATABASE_URL` is the SQLAlchemy connection URL. The checked-in value is only
+for the local Docker database; production credentials must be stored as secrets.
+
+## Database migrations
+
+Run migrations from `apps/api` after PostgreSQL is healthy:
+
+```bash
+alembic upgrade head
+```
+
+Check the current schema revision:
+
+```bash
+alembic current
+```
+
+After changing SQLAlchemy models, generate a reviewed migration:
+
+```bash
+alembic revision --autogenerate -m "describe schema change"
+```
+
+Changing a SQLAlchemy model does not change PostgreSQL by itself. Review the
+generated migration and run `alembic upgrade head` to apply it.

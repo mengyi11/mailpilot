@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     log_level: str = "INFO"
     cors_origins: list[str] = ["http://localhost:3000"]
+    database_url: str = (
+        "postgresql+psycopg://mailpilot:mailpilot_dev@localhost:5432/mailpilot"
+    )
 
 
 @lru_cache
