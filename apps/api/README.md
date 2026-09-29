@@ -38,3 +38,15 @@ uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000`, with interactive documentation at `/docs` and a health check at `/health`.
+
+## Environment configuration
+
+Copy the public template before local development:
+
+```bash
+cp .env.example .env
+```
+
+The committed template contains safe development defaults only. Never add email content, OAuth tokens, client secrets, or API keys to `.env.example` or application logs.
+
+`CORS_ORIGINS` is a JSON list of browser origins allowed to call the API. Production deployments must replace the localhost value with the deployed MailPilot frontend domain.
