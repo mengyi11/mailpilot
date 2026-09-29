@@ -24,3 +24,9 @@ python --version
 ```
 
 The `.venv` directory contains machine-specific dependencies and is intentionally excluded from Git. It must be recreated after cloning the repository.
+
+Install the backend dependencies inside the active environment:
+
+```bash
+python -m pip install -r requirements.txt
+```
