@@ -15,6 +15,14 @@ Check its status:
 docker compose ps
 ```
 
+The database initialization scripts enable the `vector` extension for semantic
+search. Verify it with:
+
+```bash
+docker compose exec postgres psql -U mailpilot -d mailpilot \
+  -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+```
+
 Stop it without deleting local data:
 
 ```bash
