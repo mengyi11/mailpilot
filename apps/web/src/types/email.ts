@@ -36,10 +36,29 @@ export type ActionItem = {
   completed: boolean;
 };
 
+export type CalendarDraft = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  timezone: string;
+  location: string | null;
+  evidence: string;
+};
+
+export type ReplyDraft = {
+  subject: string;
+  body: string;
+  tone: string;
+  language: string;
+};
+
 export type EmailDetailData = EmailSummary & {
   recipients: EmailAddress[];
   bodyText: string;
   aiOverview: AIOverview;
   translation: Translation;
   actionItems: ActionItem[];
+  calendarDraft: CalendarDraft | null;
+  replyDraft: ReplyDraft;
 };

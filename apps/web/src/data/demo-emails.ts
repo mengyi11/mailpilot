@@ -43,6 +43,21 @@ export const demoEmails: EmailDetailData[] = [
         completed: false,
       },
     ],
+    calendarDraft: {
+      id: "calendar-launch-deadline",
+      title: "发布清单最终确认",
+      startsAt: "2026-10-02T17:00:00+08:00",
+      endsAt: null,
+      timezone: "Asia/Singapore",
+      location: null,
+      evidence: "Before Friday at 5:00 PM",
+    },
+    replyDraft: {
+      subject: "Re: Project launch review",
+      body: "Hi Alex,\n\nI will review the final launch checklist before Friday at 5:00 PM and send you the remaining risks.\n\nBest,\nMengyi",
+      tone: "专业简洁",
+      language: "English",
+    },
   },
   {
     id: "demo-interview-update",
@@ -78,6 +93,21 @@ export const demoEmails: EmailDetailData[] = [
         completed: false,
       },
     ],
+    calendarDraft: {
+      id: "calendar-interview",
+      title: "Interview",
+      startsAt: "2026-10-06T10:30:00+08:00",
+      endsAt: "2026-10-06T11:30:00+08:00",
+      timezone: "Asia/Singapore",
+      location: "Online meeting",
+      evidence: "Tuesday, 6 October 2026 at 10:30 AM Singapore time",
+    },
+    replyDraft: {
+      subject: "Re: Interview schedule update",
+      body: "Hello,\n\nThank you for the update. I confirm that I am available on Tuesday, 6 October 2026 at 10:30 AM Singapore time.\n\nBest regards,\nMengyi",
+      tone: "正式礼貌",
+      language: "English",
+    },
   },
   {
     id: "demo-weekly-digest",
@@ -105,5 +135,12 @@ export const demoEmails: EmailDetailData[] = [
         "本周我们上线了审批流程优化、通知偏好设置，以及更紧凑的移动端导航。无需采取行动。",
     },
     actionItems: [],
+    calendarDraft: null,
+    replyDraft: {
+      subject: "Re: Weekly product digest",
+      body: "Thanks for sharing the weekly update. I have reviewed the latest product changes.\n\nBest,\nMengyi",
+      tone: "简洁",
+      language: "English",
+    },
   },
 ];
