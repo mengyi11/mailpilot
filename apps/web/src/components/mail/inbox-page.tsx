@@ -1,17 +1,29 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { EmailDetail } from "@/components/mail/email-detail";
 import { EmailList } from "@/components/mail/email-list";
-import { demoEmails } from "@/data/demo-emails";
+import { apiRequest } from "@/lib/api-client";
+import { demoEmailsSchema } from "@/lib/email-schema";
+
+function getDemoEmails() {
+  return apiRequest("/demo/emails", { schema: demoEmailsSchema });
+}
 
 export function InboxPage() {
-  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(
-    demoEmails[0]?.id ?? null,
-  );
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const {
+    data: emails = [],
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ["demo-emails"],
+    queryFn: getDemoEmails,
+  });
   const selectedEmail =
-    demoEmails.find((email) => email.id === selectedEmailId) ?? demoEmails[0];
+    emails.find((email) => email.id === selectedEmailId) ?? emails[0];
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
@@ -27,14 +39,20 @@ export function InboxPage() {
         </p>
       </div>
 
-      <div className="grid min-h-[680px] gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <EmailList
-          emails={demoEmails}
-          selectedEmailId={selectedEmailId}
-          onSelectEmail={setSelectedEmailId}
-        />
-        {selectedEmail ? <EmailDetail email={selectedEmail} /> : null}
-      </div>
+      {isPending ? (
+        <p className="text-muted-foreground text-sm">正在读取演示邮件…</p>
+      ) : isError ? (
+        <p className="text-destructive text-sm">演示邮件暂时无法读取。</p>
+      ) : (
+        <div className="grid min-h-[680px] gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <EmailList
+            emails={emails}
+            selectedEmailId={selectedEmailId}
+            onSelectEmail={setSelectedEmailId}
+          />
+          {selectedEmail ? <EmailDetail email={selectedEmail} /> : null}
+        </div>
+      )}
     </div>
   );
 }
