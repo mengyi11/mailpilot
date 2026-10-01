@@ -20,6 +20,29 @@ export const demoEmails: EmailDetailData[] = [
       priority: "high",
       confidence: 0.94,
     },
+    translation: {
+      sourceLanguage: "English",
+      targetLanguage: "简体中文",
+      translatedBody:
+        "你好，Mengyi：\n\n请在周五下午5点前检查最终发布清单，并回复仍然存在的风险。评审结束后，我们将冻结发布范围。\n\nAlex",
+    },
+    actionItems: [
+      {
+        id: "action-review-checklist",
+        title: "检查最终发布清单",
+        dueAt: "2026-10-02T17:00:00+08:00",
+        evidence:
+          "Before Friday at 5:00 PM, please review the final launch checklist",
+        completed: false,
+      },
+      {
+        id: "action-reply-risks",
+        title: "回复仍然存在的发布风险",
+        dueAt: "2026-10-02T17:00:00+08:00",
+        evidence: "reply with any remaining risks",
+        completed: false,
+      },
+    ],
   },
   {
     id: "demo-interview-update",
@@ -40,6 +63,21 @@ export const demoEmails: EmailDetailData[] = [
       priority: "high",
       confidence: 0.97,
     },
+    translation: {
+      sourceLanguage: "English",
+      targetLanguage: "简体中文",
+      translatedBody:
+        "你好，Mengyi：\n\n你的面试已调整至2026年10月6日星期二上午10:30（新加坡时间）。请回复确认新的时间。\n\nTalent Team",
+    },
+    actionItems: [
+      {
+        id: "action-confirm-interview",
+        title: "回复确认新的面试时间",
+        dueAt: null,
+        evidence: "Please reply to confirm the new time.",
+        completed: false,
+      },
+    ],
   },
   {
     id: "demo-weekly-digest",
@@ -60,5 +98,12 @@ export const demoEmails: EmailDetailData[] = [
       priority: "normal",
       confidence: 0.91,
     },
+    translation: {
+      sourceLanguage: "English",
+      targetLanguage: "简体中文",
+      translatedBody:
+        "本周我们上线了审批流程优化、通知偏好设置，以及更紧凑的移动端导航。无需采取行动。",
+    },
+    actionItems: [],
   },
 ];

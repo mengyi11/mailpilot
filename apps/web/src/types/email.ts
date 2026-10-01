@@ -22,8 +22,24 @@ export type AIOverview = {
   confidence: number;
 };
 
+export type Translation = {
+  sourceLanguage: string;
+  targetLanguage: string;
+  translatedBody: string;
+};
+
+export type ActionItem = {
+  id: string;
+  title: string;
+  dueAt: string | null;
+  evidence: string;
+  completed: boolean;
+};
+
 export type EmailDetailData = EmailSummary & {
   recipients: EmailAddress[];
   bodyText: string;
   aiOverview: AIOverview;
+  translation: Translation;
+  actionItems: ActionItem[];
 };

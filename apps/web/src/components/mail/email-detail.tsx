@@ -1,6 +1,8 @@
 import { Mail, Paperclip, Reply } from "lucide-react";
 
 import { AIOverviewCard } from "@/components/ai/ai-overview-card";
+import { ActionItemList } from "@/components/ai/action-item-list";
+import { TranslationPanel } from "@/components/ai/translation-panel";
 import { Button } from "@/components/ui/button";
 import type { EmailDetailData } from "@/types/email";
 
@@ -74,7 +76,11 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
           </Button>
         </section>
 
-        <AIOverviewCard overview={email.aiOverview} />
+        <div className="space-y-4">
+          <AIOverviewCard overview={email.aiOverview} />
+          <ActionItemList items={email.actionItems} />
+          <TranslationPanel translation={email.translation} />
+        </div>
       </div>
     </article>
   );
