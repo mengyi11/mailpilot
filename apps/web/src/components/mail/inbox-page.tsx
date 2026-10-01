@@ -33,7 +33,7 @@ export function InboxPage() {
     emails.find((email) => email.id === selectedEmailId) ?? emails[0];
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+    <div className="mx-auto max-w-[1600px] px-4 py-5 md:px-6 md:py-6">
       <div className="mb-5">
         <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
           Inbox
@@ -56,7 +56,7 @@ export function InboxPage() {
       ) : emails.length === 0 ? (
         <InboxEmptyState />
       ) : (
-        <div className="grid min-h-[680px] gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)]">
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}

@@ -15,8 +15,8 @@ export function EmailList({
   onSelectEmail,
 }: EmailListProps) {
   return (
-    <section className="border-border bg-card text-card-foreground overflow-hidden rounded-2xl border shadow-sm">
-      <div className="border-border flex items-center justify-between border-b px-4 py-4">
+    <section className="border-border bg-card text-card-foreground flex h-[760px] min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
         <div>
           <h2 className="font-semibold tracking-tight">收件箱</h2>
           <p className="text-muted-foreground mt-0.5 text-xs">
@@ -27,7 +27,7 @@ export function EmailList({
           <Inbox className="text-muted-foreground size-4" aria-hidden="true" />
         </div>
       </div>
-      <div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {emails.map((email) => (
           <EmailListItem
             key={email.id}
