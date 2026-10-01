@@ -27,17 +27,17 @@ export function ReplyDraftDrawer({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-stone-950/30 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-label="关闭回复草稿"
       />
-      <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl">
-        <header className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+      <aside className="bg-card text-card-foreground absolute inset-y-0 right-0 flex w-full max-w-xl flex-col shadow-2xl">
+        <header className="border-border flex items-center justify-between border-b px-5 py-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-amber-600" aria-hidden="true" />
+            <Sparkles className="text-primary size-4" aria-hidden="true" />
             <div>
               <h2 className="text-sm font-semibold">AI回复草稿</h2>
-              <p className="text-[11px] text-stone-500">
+              <p className="text-muted-foreground text-[11px]">
                 {draft.tone} · {draft.language}
               </p>
             </div>
@@ -54,7 +54,7 @@ export function ReplyDraftDrawer({
 
         <div className="flex-1 overflow-y-auto p-5">
           <label
-            className="text-xs font-medium text-stone-500"
+            className="text-muted-foreground text-xs font-medium"
             htmlFor="reply-subject"
           >
             主题
@@ -62,10 +62,10 @@ export function ReplyDraftDrawer({
           <input
             id="reply-subject"
             defaultValue={draft.subject}
-            className="mt-2 w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm outline-none focus:border-stone-400"
+            className="border-input bg-background focus:border-ring mt-2 w-full rounded-xl border px-3 py-2.5 text-sm outline-none"
           />
           <label
-            className="mt-5 block text-xs font-medium text-stone-500"
+            className="text-muted-foreground mt-5 block text-xs font-medium"
             htmlFor="reply-body"
           >
             正文
@@ -74,16 +74,16 @@ export function ReplyDraftDrawer({
             id="reply-body"
             defaultValue={draft.body}
             rows={14}
-            className="mt-2 w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm leading-6 outline-none focus:border-stone-400"
+            className="border-input bg-background focus:border-ring mt-2 w-full resize-none rounded-xl border px-3 py-3 text-sm leading-6 outline-none"
           />
         </div>
 
-        <footer className="border-t border-stone-200 p-5">
+        <footer className="border-border border-t p-5">
           <Button className="w-full" disabled>
             <Send data-icon="inline-start" aria-hidden="true" />
             发送功能尚未接入
           </Button>
-          <p className="mt-2 text-center text-[10px] text-stone-400">
+          <p className="text-muted-foreground mt-2 text-center text-[10px]">
             草稿不会自动发送，后续需要Human Approval和邮件Tool。
           </p>
         </footer>

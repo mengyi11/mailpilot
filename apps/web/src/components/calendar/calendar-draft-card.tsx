@@ -19,13 +19,16 @@ export function CalendarDraftCard({ draft }: { draft: CalendarDraft }) {
   );
 
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white p-5">
+    <section className="border-border bg-card text-card-foreground rounded-2xl border p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <CalendarCheck className="size-4 text-stone-500" aria-hidden="true" />
+          <CalendarCheck
+            className="text-muted-foreground size-4"
+            aria-hidden="true"
+          />
           <h3 className="text-sm font-semibold">日历候选</h3>
         </div>
-        <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+        <span className="bg-primary/10 text-primary rounded-full px-2 py-1 text-[10px] font-medium">
           {status === "pending"
             ? "等待确认"
             : status === "approved"
@@ -35,7 +38,7 @@ export function CalendarDraftCard({ draft }: { draft: CalendarDraft }) {
       </div>
 
       <p className="mt-4 text-sm font-semibold">{draft.title}</p>
-      <div className="mt-3 space-y-2 text-xs text-stone-600">
+      <div className="text-muted-foreground mt-3 space-y-2 text-xs">
         <p className="flex items-start gap-2">
           <Clock3 className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           <span>
@@ -51,7 +54,7 @@ export function CalendarDraftCard({ draft }: { draft: CalendarDraft }) {
             {draft.location}
           </p>
         ) : null}
-        <p className="flex items-start gap-2 text-stone-500">
+        <p className="text-muted-foreground flex items-start gap-2">
           <Quote className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           {draft.evidence}
         </p>
@@ -83,7 +86,7 @@ export function CalendarDraftCard({ draft }: { draft: CalendarDraft }) {
         </Button>
       )}
 
-      <p className="mt-3 text-[10px] leading-4 text-stone-400">
+      <p className="text-muted-foreground mt-3 text-[10px] leading-4">
         当前仅更新页面状态，尚未连接真实日历Tool。
       </p>
     </section>

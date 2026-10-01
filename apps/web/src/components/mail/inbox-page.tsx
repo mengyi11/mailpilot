@@ -16,13 +16,13 @@ export function InboxPage() {
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-5">
-        <p className="text-xs font-medium tracking-[0.16em] text-stone-500 uppercase">
+        <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
           Inbox
         </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">
           智能收件箱
         </h2>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="text-muted-foreground mt-1 text-sm">
           选择邮件，查看原文和AI提取结果。
         </p>
       </div>

@@ -15,16 +15,16 @@ export function EmailList({
   onSelectEmail,
 }: EmailListProps) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-stone-100 px-4 py-4">
+    <section className="border-border bg-card text-card-foreground overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-border flex items-center justify-between border-b px-4 py-4">
         <div>
           <h2 className="font-semibold tracking-tight">收件箱</h2>
-          <p className="mt-0.5 text-xs text-stone-500">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             {emails.length} 封演示邮件
           </p>
         </div>
-        <div className="flex size-9 items-center justify-center rounded-xl bg-stone-100">
-          <Inbox className="size-4 text-stone-600" aria-hidden="true" />
+        <div className="bg-muted flex size-9 items-center justify-center rounded-xl">
+          <Inbox className="text-muted-foreground size-4" aria-hidden="true" />
         </div>
       </div>
       <div>

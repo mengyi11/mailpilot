@@ -29,8 +29,8 @@ export function EmailListItem({
       onClick={() => onSelect(email.id)}
       aria-pressed={selected}
       className={cn(
-        "w-full border-b border-stone-100 px-4 py-4 text-left transition-colors last:border-b-0",
-        selected ? "bg-amber-50" : "bg-white hover:bg-stone-50",
+        "border-border w-full border-b px-4 py-4 text-left transition-colors last:border-b-0",
+        selected ? "bg-primary/10" : "bg-card hover:bg-muted/60",
       )}
     >
       <div className="flex items-start gap-3">
@@ -46,14 +46,16 @@ export function EmailListItem({
             <p
               className={cn(
                 "truncate text-sm",
-                email.isRead ? "font-medium text-stone-700" : "font-semibold",
+                email.isRead
+                  ? "text-foreground/75 font-medium"
+                  : "font-semibold",
               )}
             >
               {email.sender.name}
             </p>
             <time
               dateTime={email.receivedAt}
-              className="shrink-0 text-[11px] text-stone-400"
+              className="text-muted-foreground shrink-0 text-[11px]"
             >
               {formatReceivedAt(email.receivedAt)}
             </time>
@@ -67,14 +69,14 @@ export function EmailListItem({
               />
             ) : null}
           </div>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-stone-500">
+          <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-5">
             {email.preview}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {email.labels.map((label) => (
               <span
                 key={label}
-                className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600"
+                className="bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-[10px] font-medium"
               >
                 {label}
               </span>

@@ -10,31 +10,31 @@ const priorityLabels: Record<AIOverview["priority"], string> = {
 
 export function AIOverviewCard({ overview }: { overview: AIOverview }) {
   return (
-    <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+    <section className="border-primary/25 bg-primary/10 rounded-2xl border p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+          <div className="bg-primary/15 text-primary flex size-8 items-center justify-center rounded-lg">
             <Sparkles className="size-4" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-amber-950">AI速览</h3>
-            <p className="text-[11px] text-amber-700">结构化分析结果</p>
+            <h3 className="text-foreground text-sm font-semibold">AI速览</h3>
+            <p className="text-primary text-[11px]">结构化分析结果</p>
           </div>
         </div>
-        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-amber-800 shadow-sm">
+        <span className="bg-card text-primary rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm">
           {priorityLabels[overview.priority]}
         </span>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-amber-950">
+      <p className="text-foreground mt-4 text-sm leading-6">
         {overview.summary}
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-amber-800">
-        <span className="rounded-md bg-white/80 px-2 py-1">
+      <div className="text-primary mt-4 flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="bg-card/80 rounded-md px-2 py-1">
           {overview.category}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-1">
+        <span className="bg-card/80 inline-flex items-center gap-1 rounded-md px-2 py-1">
           <ShieldCheck className="size-3" aria-hidden="true" />
           置信度 {Math.round(overview.confidence * 100)}%
         </span>
