@@ -37,7 +37,7 @@ export function EmailListItem({
         <span
           className={cn(
             "mt-1.5 size-1.5 shrink-0 rounded-full",
-            email.isRead ? "bg-transparent" : "bg-amber-500",
+            email.isRead ? "bg-transparent" : "bg-primary",
           )}
           aria-label={email.isRead ? "已读" : "未读"}
         />
@@ -64,7 +64,7 @@ export function EmailListItem({
             <p className="truncate text-xs font-medium">{email.subject}</p>
             {email.isStarred ? (
               <Star
-                className="size-3.5 shrink-0 fill-amber-400 text-amber-500"
+                className="fill-primary text-primary size-3.5 shrink-0"
                 aria-label="已加星标"
               />
             ) : null}

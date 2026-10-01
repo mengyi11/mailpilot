@@ -94,11 +94,11 @@ export function Sidebar({
 
       <div className="mt-auto space-y-3">
         {!collapsed ? (
-          <div className="bg-primary/10 rounded-2xl p-4">
-            <p className="text-foreground text-sm font-medium">
+          <div className="bg-sidebar-accent rounded-2xl p-4">
+            <p className="text-sidebar-accent-foreground text-sm font-medium">
               Demo Workspace
             </p>
-            <p className="text-muted-foreground mt-1 text-xs leading-5">
+            <p className="text-sidebar-foreground/65 mt-1 text-xs leading-5">
               当前使用安全演示邮件，尚未连接真实邮箱。
             </p>
           </div>
