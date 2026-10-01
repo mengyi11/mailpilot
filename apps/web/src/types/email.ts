@@ -14,3 +14,16 @@ export type EmailSummary = {
   labels: string[];
   priority: "high" | "normal" | "low";
 };
+
+export type AIOverview = {
+  summary: string;
+  category: string;
+  priority: "high" | "normal" | "low";
+  confidence: number;
+};
+
+export type EmailDetailData = EmailSummary & {
+  recipients: EmailAddress[];
+  bodyText: string;
+  aiOverview: AIOverview;
+};
