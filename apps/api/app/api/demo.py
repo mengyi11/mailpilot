@@ -3,6 +3,13 @@ from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 
+from app.api.demo_messages import (
+    GEMINI_ENTERPRISE_BODY,
+    GEMINI_ENTERPRISE_TRANSLATION,
+    GROUP_DYNAMICS_BODY,
+    GROUP_DYNAMICS_TRANSLATION,
+)
+
 
 def to_camel(value: str) -> str:
     first, *rest = value.split("_")
@@ -71,7 +78,7 @@ class DemoEmail(ApiModel):
     ai_overview: AiOverview
     translation: Translation
     action_items: list[ActionItem]
-    calendar_draft: CalendarDraft | None
+    calendar_drafts: list[CalendarDraft]
     reply_draft: ReplyDraft
 
 
@@ -86,6 +93,90 @@ router = APIRouter(prefix="/demo", tags=["demo"])
 async def list_demo_emails() -> list[DemoEmail]:
     """Return fictional emails so the UI can be developed without inbox access."""
     return [
+        DemoEmail(
+            id="ntu-group-dynamics-study",
+            subject="Invitation: A Study on Group Dynamics",
+            sender=EmailAddress(
+                name="NTU Economics Research Team",
+                email="economics-study@ntu.edu.sg",
+            ),
+            preview="参加约80分钟的经济学研究，可选择10月5日或7日的8个场次，平均报酬约S$15。",
+            received_at="2026-10-01T09:15:00+08:00",
+            is_read=False,
+            is_starred=True,
+            labels=["研究招募", "需要报名"],
+            priority="high",
+            recipients=[EmailAddress(name="NTU Students", email="students@ntu.edu.sg")],
+            body_text=GROUP_DYNAMICS_BODY,
+            ai_overview=AiOverview(
+                summary="NTU经济学研究招募参与者，时长约80分钟，平均报酬约S$15；可从10月5日和7日的8个场次中选择并通过Qualtrics报名。",
+                category="校园活动",
+                priority="high",
+                confidence=0.98,
+            ),
+            translation=Translation(
+                source_language="English",
+                target_language="简体中文",
+                translated_body=GROUP_DYNAMICS_TRANSLATION,
+            ),
+            action_items=[
+                ActionItem(
+                    id="action-register-study",
+                    title="选择场次并完成研究报名",
+                    due_at=None,
+                    evidence="If you are interested in participating, please register",
+                    completed=False,
+                )
+            ],
+            calendar_drafts=[
+                CalendarDraft(id="study-slot-1", title="群体动力学研究 · 场次1", starts_at="2026-10-05T10:40:00+08:00", ends_at="2026-10-05T12:00:00+08:00", timezone="Asia/Singapore", location="ComLab 6 · SHHK-02-41", evidence="Timeslot 1: 10:40 am - 12:00 pm (ComLab 6)"),
+                CalendarDraft(id="study-slot-2", title="群体动力学研究 · 场次2", starts_at="2026-10-05T11:15:00+08:00", ends_at="2026-10-05T12:35:00+08:00", timezone="Asia/Singapore", location="CATI Lab · SHHK-02-39", evidence="Timeslot 2: 11:15 am - 12:35 pm (CATI Lab)"),
+                CalendarDraft(id="study-slot-3", title="群体动力学研究 · 场次3", starts_at="2026-10-05T15:40:00+08:00", ends_at="2026-10-05T17:00:00+08:00", timezone="Asia/Singapore", location="ComLab 6 · SHHK-02-41", evidence="Timeslot 3: 15:40 pm - 17:00 pm (ComLab 6)"),
+                CalendarDraft(id="study-slot-4", title="群体动力学研究 · 场次4", starts_at="2026-10-05T16:15:00+08:00", ends_at="2026-10-05T17:35:00+08:00", timezone="Asia/Singapore", location="CATI Lab · SHHK-02-39", evidence="Timeslot 4: 16:15 pm - 17:35 pm (CATI Lab)"),
+                CalendarDraft(id="study-slot-5", title="群体动力学研究 · 场次5", starts_at="2026-10-07T10:40:00+08:00", ends_at="2026-10-07T12:00:00+08:00", timezone="Asia/Singapore", location="ComLab 6 · SHHK-02-41", evidence="Timeslot 5: 10:40 am - 12:00 pm (ComLab 6)"),
+                CalendarDraft(id="study-slot-6", title="群体动力学研究 · 场次6", starts_at="2026-10-07T11:15:00+08:00", ends_at="2026-10-07T12:35:00+08:00", timezone="Asia/Singapore", location="CATI Lab · SHHK-02-39", evidence="Timeslot 6: 11:15 am - 12:35 pm (CATI Lab)"),
+                CalendarDraft(id="study-slot-7", title="群体动力学研究 · 场次7", starts_at="2026-10-07T15:40:00+08:00", ends_at="2026-10-07T17:00:00+08:00", timezone="Asia/Singapore", location="ComLab 6 · SHHK-02-41", evidence="Timeslot 7: 15:40 pm - 17:00 pm (ComLab 6)"),
+                CalendarDraft(id="study-slot-8", title="群体动力学研究 · 场次8", starts_at="2026-10-07T16:15:00+08:00", ends_at="2026-10-07T17:35:00+08:00", timezone="Asia/Singapore", location="CATI Lab · SHHK-02-39", evidence="Timeslot 8: 16:15 pm - 17:35 pm (CATI Lab)"),
+            ],
+            reply_draft=ReplyDraft(
+                subject="Re: A Study on Group Dynamics",
+                body="Dear Research Team,\n\nI am interested in participating and will register for my preferred time slot using the form.\n\nBest regards,\nMengyi",
+                tone="正式礼貌",
+                language="English",
+            ),
+        ),
+        DemoEmail(
+            id="ntu-gemini-enterprise",
+            subject="Explore Gemini Enterprise with your NTU account",
+            sender=EmailAddress(name="NTU InsPIRE", email="inspire@ntu.edu.sg"),
+            preview="NTU学生可使用受企业数据保护的Gemini Enterprise，并获得视频、课程和认证学习资源。",
+            received_at="2026-10-01T08:30:00+08:00",
+            is_read=False,
+            is_starred=False,
+            labels=["校园资讯", "AI工具"],
+            priority="normal",
+            recipients=[EmailAddress(name="NTU Students", email="students@ntu.edu.sg")],
+            body_text=GEMINI_ENTERPRISE_BODY,
+            ai_overview=AiOverview(
+                summary="NTU学生可通过学校账户使用Gemini Enterprise；聊天和文件受企业数据保护，同时可访问AI入门、实践课程和认证资源。",
+                category="校园资讯",
+                priority="normal",
+                confidence=0.96,
+            ),
+            translation=Translation(
+                source_language="English",
+                target_language="简体中文",
+                translated_body=GEMINI_ENTERPRISE_TRANSLATION,
+            ),
+            action_items=[],
+            calendar_drafts=[],
+            reply_draft=ReplyDraft(
+                subject="Re: Gemini Enterprise at NTU",
+                body="Thank you for sharing these resources. I will explore Gemini Enterprise using my NTU account.\n\nBest regards,\nMengyi",
+                tone="简洁礼貌",
+                language="English",
+            ),
+        ),
         DemoEmail(
             id="demo-launch-review",
             subject="Project launch review",
@@ -132,15 +223,26 @@ async def list_demo_emails() -> list[DemoEmail]:
                     completed=False,
                 ),
             ],
-            calendar_draft=CalendarDraft(
-                id="calendar-launch-deadline",
-                title="发布清单最终确认",
-                starts_at="2026-10-02T17:00:00+08:00",
-                ends_at=None,
-                timezone="Asia/Singapore",
-                location=None,
-                evidence="Before Friday at 5:00 PM",
-            ),
+            calendar_drafts=[
+                CalendarDraft(
+                    id="calendar-launch-deadline",
+                    title="发布清单最终确认",
+                    starts_at="2026-10-02T17:00:00+08:00",
+                    ends_at=None,
+                    timezone="Asia/Singapore",
+                    location=None,
+                    evidence="Before Friday at 5:00 PM",
+                ),
+                CalendarDraft(
+                    id="calendar-scope-freeze",
+                    title="发布范围冻结",
+                    starts_at="2026-10-02T17:30:00+08:00",
+                    ends_at=None,
+                    timezone="Asia/Singapore",
+                    location=None,
+                    evidence="We will freeze the release scope after the review.",
+                ),
+            ],
             reply_draft=ReplyDraft(
                 subject="Re: Project launch review",
                 body=(
@@ -190,15 +292,17 @@ async def list_demo_emails() -> list[DemoEmail]:
                     completed=False,
                 )
             ],
-            calendar_draft=CalendarDraft(
-                id="calendar-interview",
-                title="Interview",
-                starts_at="2026-10-06T10:30:00+08:00",
-                ends_at="2026-10-06T11:30:00+08:00",
-                timezone="Asia/Singapore",
-                location="Online meeting",
-                evidence="Tuesday, 6 October 2026 at 10:30 AM Singapore time",
-            ),
+            calendar_drafts=[
+                CalendarDraft(
+                    id="calendar-interview",
+                    title="Interview",
+                    starts_at="2026-10-06T10:30:00+08:00",
+                    ends_at="2026-10-06T11:30:00+08:00",
+                    timezone="Asia/Singapore",
+                    location="Online meeting",
+                    evidence="Tuesday, 6 October 2026 at 10:30 AM Singapore time",
+                )
+            ],
             reply_draft=ReplyDraft(
                 subject="Re: Interview schedule update",
                 body=(
@@ -240,7 +344,7 @@ async def list_demo_emails() -> list[DemoEmail]:
                 ),
             ),
             action_items=[],
-            calendar_draft=None,
+            calendar_drafts=[],
             reply_draft=ReplyDraft(
                 subject="Re: Weekly product digest",
                 body=(

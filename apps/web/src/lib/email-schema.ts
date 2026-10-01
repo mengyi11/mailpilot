@@ -39,8 +39,8 @@ export const emailDetailSchema = z.object({
       completed: z.boolean(),
     }),
   ),
-  calendarDraft: z
-    .object({
+  calendarDrafts: z.array(
+    z.object({
       id: z.string(),
       title: z.string(),
       startsAt: z.iso.datetime({ offset: true }),
@@ -48,8 +48,8 @@ export const emailDetailSchema = z.object({
       timezone: z.string(),
       location: z.string().nullable(),
       evidence: z.string(),
-    })
-    .nullable(),
+    }),
+  ),
   replyDraft: z.object({
     subject: z.string(),
     body: z.string(),

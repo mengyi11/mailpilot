@@ -59,6 +59,6 @@ export type EmailDetailData = EmailSummary & {
   aiOverview: AIOverview;
   translation: Translation;
   actionItems: ActionItem[];
-  calendarDraft: CalendarDraft | null;
+  calendarDrafts: CalendarDraft[];
   replyDraft: ReplyDraft;
 };
