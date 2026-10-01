@@ -5,6 +5,11 @@ import { useState } from "react";
 
 import { EmailDetail } from "@/components/mail/email-detail";
 import { EmailList } from "@/components/mail/email-list";
+import {
+  InboxEmptyState,
+  InboxErrorState,
+  InboxLoadingState,
+} from "@/components/mail/inbox-states";
 import { apiRequest } from "@/lib/api-client";
 import { demoEmailsSchema } from "@/lib/email-schema";
 
@@ -18,6 +23,8 @@ export function InboxPage() {
     data: emails = [],
     isPending,
     isError,
+    isFetching,
+    refetch,
   } = useQuery({
     queryKey: ["demo-emails"],
     queryFn: getDemoEmails,
@@ -40,9 +47,14 @@ export function InboxPage() {
       </div>
 
       {isPending ? (
-        <p className="text-muted-foreground text-sm">正在读取演示邮件…</p>
+        <InboxLoadingState />
       ) : isError ? (
-        <p className="text-destructive text-sm">演示邮件暂时无法读取。</p>
+        <InboxErrorState
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
+      ) : emails.length === 0 ? (
+        <InboxEmptyState />
       ) : (
         <div className="grid min-h-[680px] gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
           <EmailList
