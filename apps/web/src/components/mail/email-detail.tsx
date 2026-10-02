@@ -1,11 +1,26 @@
 "use client";
 
-import { Languages, Mail, Paperclip, Reply } from "lucide-react";
-import { useState } from "react";
+import {
+  GripVertical,
+  Languages,
+  Mail,
+  Maximize2,
+  Minimize2,
+  Paperclip,
+  Reply,
+  RotateCcw,
+} from "lucide-react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useRef,
+  useState,
+} from "react";
 
 import { AIOverviewCard } from "@/components/ai/ai-overview-card";
 import { CalendarDraftCard } from "@/components/calendar/calendar-draft-card";
 import { ReplyDraftDrawer } from "@/components/mail/reply-draft-drawer";
+import { RichEmailBody } from "@/components/mail/rich-email-body";
 import { Button } from "@/components/ui/button";
 import type { EmailDetailData } from "@/types/email";
 
@@ -19,6 +34,36 @@ function formatDate(value: string) {
 export function EmailDetail({ email }: { email: EmailDetailData }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [messagePanePercent, setMessagePanePercent] = useState(62);
+  const detailGridRef = useRef<HTMLDivElement>(null);
+
+  function resizeMessagePane(nextPercent: number) {
+    setMessagePanePercent(Math.min(72, Math.max(48, nextPercent)));
+  }
+
+  function startPaneResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    const grid = detailGridRef.current;
+
+    if (!grid) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const bounds = grid.getBoundingClientRect();
+      const nextPercent =
+        ((moveEvent.clientX - bounds.left) / bounds.width) * 100;
+      resizeMessagePane(nextPercent);
+    };
+
+    const stopResize = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResize);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResize);
+  }
 
   return (
     <>
@@ -72,7 +117,16 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
           </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 xl:grid-cols-[minmax(360px,1fr)_300px] xl:overflow-hidden 2xl:grid-cols-[minmax(420px,1fr)_310px]">
+        <div
+          ref={detailGridRef}
+          className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 xl:grid-cols-[minmax(300px,var(--message-pane))_12px_minmax(300px,var(--ai-pane))] xl:gap-0 xl:overflow-hidden"
+          style={
+            {
+              "--message-pane": `${messagePanePercent}fr`,
+              "--ai-pane": `${100 - messagePanePercent}fr`,
+            } as CSSProperties
+          }
+        >
           <div className="flex min-h-[620px] flex-col xl:min-h-0">
             <section
               className="border-border flex min-h-0 flex-1 flex-col rounded-2xl border p-4"
@@ -91,6 +145,35 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
                   ) : null}
                 </span>
                 <div className="flex items-center gap-1">
+                  <div className="border-border mr-1 hidden items-center rounded-lg border xl:flex">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => resizeMessagePane(messagePanePercent - 5)}
+                      aria-label="缩小邮件原文区域"
+                      title="缩小邮件原文区域"
+                    >
+                      <Minimize2 aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => resizeMessagePane(62)}
+                      aria-label="恢复默认宽度"
+                      title="恢复默认宽度"
+                    >
+                      <RotateCcw aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => resizeMessagePane(messagePanePercent + 5)}
+                      aria-label="放大邮件原文区域"
+                      title="放大邮件原文区域"
+                    >
+                      <Maximize2 aria-hidden="true" />
+                    </Button>
+                  </div>
                   <Button
                     variant={showTranslation ? "secondary" : "ghost"}
                     size="xs"
@@ -105,10 +188,14 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
                   </Button>
                 </div>
               </div>
-              <div className="text-foreground/80 mt-3 min-h-0 flex-1 overflow-y-auto pr-2 text-sm leading-7 whitespace-pre-line">
-                {showTranslation
-                  ? email.translation.translatedBody
-                  : email.bodyText}
+              <div className="text-foreground/80 mt-3 min-h-0 flex-1 overflow-y-auto pr-3">
+                <RichEmailBody
+                  content={
+                    showTranslation
+                      ? email.translation.translatedBody
+                      : email.bodyText
+                  }
+                />
               </div>
               {showTranslation ? (
                 <p className="text-muted-foreground mt-3 shrink-0 border-t pt-3 text-[11px]">
@@ -118,8 +205,23 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
             </section>
           </div>
 
+          <button
+            type="button"
+            onPointerDown={startPaneResize}
+            className="group hidden h-full cursor-col-resize touch-none items-center justify-center xl:flex"
+            aria-label="拖动调整邮件原文和AI信息区域宽度"
+            title="拖动调整左右区域宽度"
+          >
+            <span className="bg-border group-hover:bg-primary/60 group-focus-visible:bg-primary/60 flex h-12 w-1 items-center justify-center rounded-full transition-colors">
+              <GripVertical
+                className="text-muted-foreground size-3.5 max-w-none"
+                aria-hidden="true"
+              />
+            </span>
+          </button>
+
           <aside
-            className="flex min-h-[520px] flex-col gap-3 overflow-hidden xl:min-h-0 xl:pr-1"
+            className="flex min-h-[520px] flex-col gap-3 overflow-hidden xl:min-h-0 xl:pl-1"
             aria-label="AI邮件信息"
           >
             <AIOverviewCard overview={email.aiOverview} />
