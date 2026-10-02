@@ -22,7 +22,7 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
 
   return (
     <>
-      <article className="border-border bg-card text-card-foreground flex h-[760px] min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm">
+      <article className="bg-card text-card-foreground flex h-full min-h-0 flex-col overflow-hidden">
         <header className="border-border shrink-0 border-b p-4 md:px-5 md:py-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">

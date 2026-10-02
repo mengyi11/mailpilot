@@ -1,4 +1,4 @@
-import { Inbox } from "lucide-react";
+import { ListFilter } from "lucide-react";
 
 import { EmailListItem } from "@/components/mail/email-list-item";
 import type { EmailSummary } from "@/types/email";
@@ -15,17 +15,21 @@ export function EmailList({
   onSelectEmail,
 }: EmailListProps) {
   return (
-    <section className="border-border bg-card text-card-foreground flex h-[760px] min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm">
-      <div className="border-border flex shrink-0 items-center justify-between border-b px-4 py-3">
+    <section className="border-border bg-card text-card-foreground flex h-full min-h-0 flex-col overflow-hidden border-r">
+      <div className="border-border flex h-16 shrink-0 items-center justify-between border-b px-4">
         <div>
           <h2 className="font-semibold tracking-tight">收件箱</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            {emails.length} 封演示邮件
+          <p className="text-muted-foreground mt-0.5 text-[11px]">
+            {emails.length} 封邮件
           </p>
         </div>
-        <div className="bg-muted flex size-9 items-center justify-center rounded-xl">
-          <Inbox className="text-muted-foreground size-4" aria-hidden="true" />
-        </div>
+        <button
+          type="button"
+          className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-lg"
+          aria-label="筛选邮件"
+        >
+          <ListFilter className="size-4" aria-hidden="true" />
+        </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {emails.map((email) => (

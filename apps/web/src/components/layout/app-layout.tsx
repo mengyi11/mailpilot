@@ -79,19 +79,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="bg-background text-foreground min-h-screen">
+      <TopNavigation
+        activePage={activePage}
+        collapsed={collapsed}
+        onToggleSidebar={() => setCollapsed((value) => !value)}
+      />
       <Sidebar
         collapsed={collapsed}
         activePage={activePage}
-        onToggle={() => setCollapsed((value) => !value)}
         onNavigate={setActivePage}
         onLogout={() => setSignedIn(false)}
       />
       <div
-        className={`pb-16 transition-[padding] duration-200 lg:pb-0 ${
-          collapsed ? "lg:pl-20" : "lg:pl-64"
+        className={`pt-16 pb-16 transition-[padding] duration-200 lg:pb-0 ${
+          collapsed ? "lg:pl-16" : "lg:pl-56"
         }`}
       >
-        <TopNavigation activePage={activePage} />
         <main>
           {activePage === "inbox" ? (
             children

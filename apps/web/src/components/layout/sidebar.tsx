@@ -2,13 +2,13 @@
 
 import {
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
+  Archive,
   Inbox,
   LogOut,
-  Mail,
+  Pencil,
   Settings,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ const navigation = [
 type SidebarProps = {
   collapsed: boolean;
   activePage: NavigationId;
-  onToggle: () => void;
   onNavigate: (page: NavigationId) => void;
   onLogout: () => void;
 };
@@ -34,43 +33,31 @@ type SidebarProps = {
 export function Sidebar({
   collapsed,
   activePage,
-  onToggle,
   onNavigate,
   onLogout,
 }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "border-sidebar-border bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-40 hidden border-r p-4 transition-[width] duration-200 lg:flex lg:flex-col",
-        collapsed ? "w-20" : "w-64",
+        "border-sidebar-border bg-sidebar text-sidebar-foreground fixed top-16 bottom-0 left-0 z-40 hidden border-r px-3 py-4 transition-[width] duration-200 lg:flex lg:flex-col",
+        collapsed ? "w-16" : "w-56",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center py-3",
-          collapsed ? "justify-center" : "gap-3 px-2",
-        )}
-      >
-        <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-10 items-center justify-center rounded-xl">
-          <Mail className="size-5" aria-hidden="true" />
-        </div>
-        <div className={collapsed ? "hidden" : undefined}>
-          <p className="font-semibold tracking-tight">MailPilot</p>
-          <p className="text-muted-foreground text-xs">邮站</p>
-        </div>
-      </div>
-
       <Button
-        variant="outline"
-        size="icon-sm"
-        className="bg-sidebar absolute top-20 -right-3 rounded-full shadow-sm"
-        onClick={onToggle}
-        aria-label={collapsed ? "展开导航栏" : "折叠导航栏"}
+        className={cn("mb-5", collapsed ? "w-10 px-0" : "w-full justify-start")}
+        title={collapsed ? "新建邮件" : undefined}
       >
-        {collapsed ? <ChevronRight /> : <ChevronLeft />}
+        <Pencil aria-hidden="true" />
+        <span className={collapsed ? "sr-only" : undefined}>新建邮件</span>
       </Button>
 
-      <nav className="mt-8 space-y-1" aria-label="主导航">
+      {!collapsed ? (
+        <p className="text-sidebar-foreground/50 mb-2 px-3 text-[10px] font-semibold tracking-[0.14em] uppercase">
+          邮箱
+        </p>
+      ) : null}
+
+      <nav className="space-y-1" aria-label="主导航">
         {navigation.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -79,7 +66,7 @@ export function Sidebar({
             aria-current={activePage === id ? "page" : undefined}
             onClick={() => onNavigate(id)}
             className={cn(
-              "flex w-full items-center rounded-xl py-2.5 text-sm font-medium transition-colors",
+              "flex w-full items-center rounded-lg py-2 text-sm font-medium transition-colors",
               collapsed ? "justify-center px-2" : "gap-3 px-3",
               activePage === id
                 ? "bg-sidebar-primary text-sidebar-primary-foreground"
@@ -91,6 +78,26 @@ export function Sidebar({
           </button>
         ))}
       </nav>
+
+      <div className="border-sidebar-border mt-4 space-y-1 border-t pt-4">
+        {[
+          { label: "归档", icon: Archive },
+          { label: "已删除", icon: Trash2 },
+        ].map(({ label, icon: Icon }) => (
+          <button
+            key={label}
+            type="button"
+            title={collapsed ? label : undefined}
+            className={cn(
+              "text-sidebar-foreground/65 hover:bg-sidebar-accent flex w-full items-center rounded-lg py-2 text-sm transition-colors",
+              collapsed ? "justify-center px-2" : "gap-3 px-3",
+            )}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            <span className={collapsed ? "sr-only" : undefined}>{label}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="mt-auto space-y-3">
         {!collapsed ? (

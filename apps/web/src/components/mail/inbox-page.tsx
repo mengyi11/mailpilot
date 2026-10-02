@@ -33,30 +33,24 @@ export function InboxPage() {
     emails.find((email) => email.id === selectedEmailId) ?? emails[0];
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-5 md:px-6 md:py-6">
-      <div className="mb-5">
-        <p className="text-muted-foreground text-xs font-medium tracking-[0.16em] uppercase">
-          Inbox
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-          智能收件箱
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          选择邮件，查看原文和AI提取结果。
-        </p>
-      </div>
-
+    <div className="h-[calc(100vh-4rem)] min-h-[640px] overflow-hidden">
       {isPending ? (
-        <InboxLoadingState />
+        <div className="p-5">
+          <InboxLoadingState />
+        </div>
       ) : isError ? (
-        <InboxErrorState
-          onRetry={() => void refetch()}
-          isRetrying={isFetching}
-        />
+        <div className="p-5">
+          <InboxErrorState
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
+          />
+        </div>
       ) : emails.length === 0 ? (
-        <InboxEmptyState />
+        <div className="p-5">
+          <InboxEmptyState />
+        </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid h-full lg:grid-cols-[340px_minmax(0,1fr)] 2xl:grid-cols-[370px_minmax(0,1fr)]">
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}

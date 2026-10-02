@@ -1,4 +1,4 @@
-import { Search, Sparkles } from "lucide-react";
+import { Bell, Mail, Menu, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -11,24 +11,56 @@ const pageTitles: Record<NavigationId, string> = {
   settings: "工作区设置",
 };
 
-export function TopNavigation({ activePage }: { activePage: NavigationId }) {
+export function TopNavigation({
+  activePage,
+  collapsed,
+  onToggleSidebar,
+}: {
+  activePage: NavigationId;
+  collapsed: boolean;
+  onToggleSidebar: () => void;
+}) {
   return (
-    <header className="border-border/80 bg-background/90 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:px-8 md:py-4">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <div>
-          <p className="text-muted-foreground hidden text-xs font-medium tracking-[0.18em] uppercase sm:block">
-            MailPilot Workspace
-          </p>
-          <h1 className="text-lg font-semibold tracking-tight sm:mt-1 sm:text-xl">
-            {pageTitles[activePage]}
-          </h1>
+    <header className="border-border bg-card fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b px-3 shadow-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleSidebar}
+          aria-label={collapsed ? "展开文件夹栏" : "折叠文件夹栏"}
+          className="hidden lg:inline-flex"
+        >
+          <Menu aria-hidden="true" />
+        </Button>
+        <div className="flex w-44 shrink-0 items-center gap-2">
+          <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg">
+            <Mail className="size-4" aria-hidden="true" />
+          </span>
+          <div className="leading-tight">
+            <p className="text-sm font-semibold">MailPilot</p>
+            <p className="text-muted-foreground text-[10px]">AI邮件工作台</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        <label className="bg-muted mx-auto hidden h-9 max-w-xl flex-1 items-center gap-2 rounded-lg px-3 md:flex">
+          <Search className="text-muted-foreground size-4" aria-hidden="true" />
+          <span className="sr-only">搜索邮件</span>
+          <input
+            type="search"
+            placeholder="搜索邮件、联系人或主题"
+            className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
+          />
+        </label>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="text-muted-foreground hidden text-xs xl:block">
+            {pageTitles[activePage]}
+          </span>
           <ThemeToggle />
-          <Button variant="outline" size="icon" aria-label="搜索邮件">
-            <Search aria-hidden="true" />
+          <Button variant="ghost" size="icon" aria-label="通知">
+            <Bell aria-hidden="true" />
           </Button>
-          <Button className="hidden sm:inline-flex">
+          <Button size="sm" className="hidden sm:inline-flex">
             <Sparkles data-icon="inline-start" aria-hidden="true" />
             分析邮件
           </Button>
