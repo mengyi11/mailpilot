@@ -1,8 +1,12 @@
 alembic==1.20.0
 fastapi==0.141.1
+cryptography==46.0.5
+httpx==0.28.1
+itsdangerous==2.2.0
 pgvector==0.5.0
 psycopg[binary]==3.3.6
 pydantic==2.13.5
 pydantic-settings==2.15.0
 SQLAlchemy==2.1.1
 uvicorn[standard]==0.54.0
+pytest==9.0.2
