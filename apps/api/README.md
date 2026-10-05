@@ -42,6 +42,23 @@ uvicorn app.main:app --reload
 
 The API will be available at `http://localhost:8000`, with interactive documentation at `/docs` and a health check at `/health`.
 
+## Google OAuth security boundary
+
+Google OAuth is handled only by FastAPI:
+
+- `GET /auth/google/connect` creates a signed, ten-minute OAuth state and the
+  Google authorization URL.
+- `GET /auth/google/callback` verifies state, exchanges the one-time code,
+  reads the Gmail profile, and stores encrypted credentials.
+- Expired access tokens are refreshed server-side with the encrypted refresh
+  token.
+- `POST /auth/google/accounts/{account_id}/disconnect` revokes Google access
+  and removes the local credential.
+
+The frontend receives connection status and account IDs only. Client secrets,
+authorization codes, access tokens, and refresh tokens must never be returned
+to the browser, logged, included in Dify inputs, or committed to Git.
+
 ## Environment configuration
 
 Copy the public template before local development:
