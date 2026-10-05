@@ -38,3 +38,9 @@ def configure_logging(level: str) -> None:
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
     root_logger.setLevel(level.upper())
+
+    # Uvicorn's default access log includes the full query string. OAuth
+    # callbacks carry a short-lived authorization code in that query, so we
+    # disable it and rely on MailPilot's request middleware, which logs only
+    # the sanitized URL path.
+    logging.getLogger("uvicorn.access").disabled = True
