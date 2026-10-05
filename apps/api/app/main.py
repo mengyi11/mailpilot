@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.demo import router as demo_router
+from app.api.google_auth import router as google_auth_router
 from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.logging import configure_logging
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(application)
     application.include_router(demo_router)
+    application.include_router(google_auth_router)
 
     @application.middleware("http")
     async def request_context(request: Request, call_next):
