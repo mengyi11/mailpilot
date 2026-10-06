@@ -19,6 +19,7 @@ import {
 
 import { AIOverviewCard } from "@/components/ai/ai-overview-card";
 import { CalendarDraftCard } from "@/components/calendar/calendar-draft-card";
+import { HtmlEmailBody } from "@/components/mail/html-email-body";
 import { ReplyDraftDrawer } from "@/components/mail/reply-draft-drawer";
 import { RichEmailBody } from "@/components/mail/rich-email-body";
 import { Button } from "@/components/ui/button";
@@ -188,19 +189,63 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
                   </Button>
                 </div>
               </div>
-              <div className="text-foreground/80 mt-3 min-h-0 flex-1 overflow-y-auto pr-3">
-                <RichEmailBody
-                  content={
-                    showTranslation
-                      ? email.translation.translatedBody
-                      : email.bodyText
-                  }
-                />
+              <div className="text-foreground/80 mt-3 min-h-0 flex-1 overflow-y-auto">
+                {!showTranslation && email.bodyHtml ? (
+                  <HtmlEmailBody html={email.bodyHtml} title={email.subject} />
+                ) : showTranslation && email.translation.translatedHtml ? (
+                  <HtmlEmailBody
+                    html={email.translation.translatedHtml}
+                    title={`${email.subject}（译文）`}
+                  />
+                ) : showTranslation &&
+                  email.translation.status !== "completed" ? (
+                  <div className="flex min-h-[360px] items-center justify-center px-6 text-center">
+                    <div>
+                      <p className="text-foreground text-sm font-medium">
+                        尚未生成保留排版的译文
+                      </p>
+                      <p className="text-muted-foreground mt-2 max-w-sm text-xs leading-6">
+                        翻译 Agent 接入后会保留 HTML
+                        标签和样式，并对图片文字执行 OCR。
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pr-3">
+                    <RichEmailBody
+                      content={
+                        showTranslation
+                          ? email.translation.translatedBody
+                          : email.bodyText
+                      }
+                    />
+                  </div>
+                )}
               </div>
               {showTranslation ? (
-                <p className="text-muted-foreground mt-3 shrink-0 border-t pt-3 text-[11px]">
-                  AI译文仅供参考，执行操作前请核对邮件原文。
-                </p>
+                <div className="text-muted-foreground mt-3 shrink-0 border-t pt-3 text-[11px]">
+                  <p>AI译文和OCR结果仅供参考，执行操作前请核对邮件原文。</p>
+                  {email.translation.ocrBlocks.length > 0 ? (
+                    <details className="mt-2">
+                      <summary className="text-foreground cursor-pointer font-medium">
+                        查看图片文字翻译（{email.translation.ocrBlocks.length}）
+                      </summary>
+                      <div className="mt-2 max-h-32 space-y-2 overflow-y-auto">
+                        {email.translation.ocrBlocks.map((block) => (
+                          <div
+                            key={`${block.imageIndex}-${block.sourceText}`}
+                            className="bg-muted rounded-lg p-2"
+                          >
+                            <p>{block.translatedText}</p>
+                            <p className="mt-1 opacity-60">
+                              原文：{block.sourceText}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
+                </div>
               ) : null}
             </section>
           </div>

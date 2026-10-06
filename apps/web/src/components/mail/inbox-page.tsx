@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { EmailDetail } from "@/components/mail/email-detail";
@@ -11,13 +11,21 @@ import {
   InboxLoadingState,
 } from "@/components/mail/inbox-states";
 import { apiRequest } from "@/lib/api-client";
-import { demoEmailsSchema } from "@/lib/email-schema";
+import { emailsSchema, gmailSyncResultSchema } from "@/lib/email-schema";
 
-function getDemoEmails() {
-  return apiRequest("/demo/emails", { schema: demoEmailsSchema });
+function getEmails() {
+  return apiRequest("/gmail/emails?limit=100", { schema: emailsSchema });
+}
+
+function syncGmail() {
+  return apiRequest("/gmail/sync?limit=100", {
+    method: "POST",
+    schema: gmailSyncResultSchema,
+  });
 }
 
 export function InboxPage() {
+  const queryClient = useQueryClient();
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const {
     data: emails = [],
@@ -26,11 +34,26 @@ export function InboxPage() {
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["demo-emails"],
-    queryFn: getDemoEmails,
+    queryKey: ["gmail-emails"],
+    queryFn: getEmails,
+  });
+  const syncMutation = useMutation({
+    mutationFn: syncGmail,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
+    },
   });
   const selectedEmail =
     emails.find((email) => email.id === selectedEmailId) ?? emails[0];
+  const syncMessage = syncMutation.isPending
+    ? "正在同步 Gmail…"
+    : syncMutation.isError
+      ? "同步失败，请重试"
+      : syncMutation.data
+        ? syncMutation.data.fetched === 0
+          ? "已是最新状态"
+          : `同步完成：新增 ${syncMutation.data.created}，更新 ${syncMutation.data.updated}`
+        : null;
 
   return (
     <div className="h-[calc(100vh-4rem)] min-h-[640px] overflow-hidden">
@@ -55,6 +78,9 @@ export function InboxPage() {
             emails={emails}
             selectedEmailId={selectedEmailId}
             onSelectEmail={setSelectedEmailId}
+            onSync={() => syncMutation.mutate()}
+            isSyncing={syncMutation.isPending}
+            syncMessage={syncMessage}
           />
           {selectedEmail ? <EmailDetail email={selectedEmail} /> : null}
         </div>

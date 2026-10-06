@@ -26,6 +26,13 @@ export type Translation = {
   sourceLanguage: string;
   targetLanguage: string;
   translatedBody: string;
+  translatedHtml: string | null;
+  ocrBlocks: Array<{
+    imageIndex: number;
+    sourceText: string;
+    translatedText: string;
+  }>;
+  status: "pending" | "completed" | "failed";
 };
 
 export type ActionItem = {
@@ -56,6 +63,7 @@ export type ReplyDraft = {
 export type EmailDetailData = EmailSummary & {
   recipients: EmailAddress[];
   bodyText: string;
+  bodyHtml: string | null;
   aiOverview: AIOverview;
   translation: Translation;
   actionItems: ActionItem[];

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     token_encryption_key: str = ""
     token_encryption_key_version: str = "v1"
     frontend_oauth_success_url: str = "http://localhost:3000/settings/accounts"
+    gmail_sync_limit: int = 100
+    gmail_sync_concurrency: int = 5
+    gmail_sync_max_retries: int = 3
 
 
 @lru_cache

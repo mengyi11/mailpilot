@@ -36,6 +36,9 @@ class Translation(ApiModel):
     source_language: str
     target_language: str
     translated_body: str
+    translated_html: str | None = None
+    ocr_blocks: list[dict] = []
+    status: str = "completed"
 
 
 class ActionItem(ApiModel):

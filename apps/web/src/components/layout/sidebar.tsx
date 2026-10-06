@@ -103,10 +103,10 @@ export function Sidebar({
         {!collapsed ? (
           <div className="bg-sidebar-accent rounded-2xl p-4">
             <p className="text-sidebar-accent-foreground text-sm font-medium">
-              Demo Workspace
+              Gmail Workspace
             </p>
             <p className="text-sidebar-foreground/65 mt-1 text-xs leading-5">
-              当前使用安全演示邮件，尚未连接真实邮箱。
+              已连接真实 Gmail，显示最近同步的 100 封邮件。
             </p>
           </div>
         ) : null}

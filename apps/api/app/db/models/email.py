@@ -109,7 +109,7 @@ class Attachment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     email_id: Mapped[UUID] = mapped_column(
         ForeignKey("emails.id", ondelete="CASCADE"), nullable=False
     )
-    provider_attachment_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_attachment_id: Mapped[str] = mapped_column(Text, nullable=False)
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     mime_type: Mapped[str | None] = mapped_column(String(255))
     size_bytes: Mapped[int | None] = mapped_column(BigInteger)

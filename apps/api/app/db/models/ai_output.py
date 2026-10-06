@@ -58,6 +58,10 @@ class Translation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     target_language: Mapped[str] = mapped_column(String(16), nullable=False)
     translated_subject: Mapped[str | None] = mapped_column(Text)
     translated_body: Mapped[str] = mapped_column(Text, nullable=False)
+    translated_html: Mapped[str | None] = mapped_column(Text)
+    ocr_blocks: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
     model_name: Mapped[str | None] = mapped_column(String(128))
     prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
 

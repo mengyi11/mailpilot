@@ -19,6 +19,7 @@ export const emailDetailSchema = z.object({
   priority: prioritySchema,
   recipients: z.array(emailAddressSchema),
   bodyText: z.string(),
+  bodyHtml: z.string().nullable(),
   aiOverview: z.object({
     summary: z.string(),
     category: z.string(),
@@ -29,6 +30,15 @@ export const emailDetailSchema = z.object({
     sourceLanguage: z.string(),
     targetLanguage: z.string(),
     translatedBody: z.string(),
+    translatedHtml: z.string().nullable(),
+    ocrBlocks: z.array(
+      z.object({
+        imageIndex: z.number().int().nonnegative(),
+        sourceText: z.string(),
+        translatedText: z.string(),
+      }),
+    ),
+    status: z.enum(["pending", "completed", "failed"]),
   }),
   actionItems: z.array(
     z.object({
@@ -58,4 +68,17 @@ export const emailDetailSchema = z.object({
   }),
 });
 
-export const demoEmailsSchema = z.array(emailDetailSchema);
+export const emailsSchema = z.array(emailDetailSchema);
+export const demoEmailsSchema = emailsSchema;
+
+export const gmailSyncResultSchema = z.object({
+  accountId: z.string(),
+  requested: z.number().int().nonnegative(),
+  fetched: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+  mode: z.enum(["full", "incremental"]),
+  historyId: z.string().nullable(),
+});
