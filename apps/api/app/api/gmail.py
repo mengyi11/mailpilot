@@ -106,9 +106,9 @@ def _connected_account(db: Session) -> EmailAccount:
     return account
 
 
-@router.post("/sync", response_model=SyncResponse, summary="Sync up to 100 Gmail messages")
+@router.post("/sync", response_model=SyncResponse, summary="Sync up to 15 Gmail messages")
 async def sync_gmail(
-    limit: int = Query(default=100, ge=1, le=100),
+    limit: int = Query(default=15, ge=1, le=15),
     db: Session = Depends(get_db),
 ) -> GmailSyncResult:
     account = _connected_account(db)
@@ -117,7 +117,7 @@ async def sync_gmail(
 
 @router.get("/emails", response_model=list[GmailEmail], summary="List synchronized Gmail messages")
 async def list_gmail_emails(
-    limit: int = Query(default=100, ge=1, le=100),
+    limit: int = Query(default=15, ge=1, le=15),
     db: Session = Depends(get_db),
 ) -> list[GmailEmail]:
     account = _connected_account(db)
