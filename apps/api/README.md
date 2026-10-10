@@ -96,3 +96,27 @@ alembic revision --autogenerate -m "describe schema change"
 
 Changing a SQLAlchemy model does not change PostgreSQL by itself. Review the
 generated migration and run `alembic upgrade head` to apply it.
+
+## Email processing pipeline
+
+Gmail synchronization keeps the original HTML for traceability, stores a
+sanitized HTML copy for the browser, and produces `cleaned_text` as the only
+body intended for Dify/LLM prompts. The processor removes active content,
+remote tracking images, quoted history, common signatures, and disclaimers
+while preserving visible dates, amounts, names, and links.
+
+TXT, PDF, and DOCX attachments are downloaded server-side and converted to
+text when they are within the configured count and size limits. Unsupported,
+inline, oversized, and damaged files receive an explicit extraction status;
+they do not fail the entire Gmail sync.
+
+Each processed email records the original timezone, the user's preferred
+timezone, and a reference date derived from the email's sent time. Relative
+dates such as “tomorrow” must be interpreted from this reference date, not the
+date when an AI job happens to run.
+
+After migration `0010`, normalize emails that were already synchronized:
+
+```bash
+PYTHONPATH=. python scripts/process_existing_emails.py
+```

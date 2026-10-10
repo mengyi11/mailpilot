@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     gmail_sync_limit: int = 100
     gmail_sync_concurrency: int = 5
     gmail_sync_max_retries: int = 3
+    email_user_timezone: str = "Asia/Singapore"
+    attachment_max_size_bytes: int = 10 * 1024 * 1024
+    attachment_max_per_email: int = 10
 
 
 @lru_cache

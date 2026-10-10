@@ -77,6 +77,14 @@ class Email(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     snippet: Mapped[str | None] = mapped_column(Text)
     body_text: Mapped[str | None] = mapped_column(Text)
     body_html: Mapped[str | None] = mapped_column(Text)
+    raw_body_html: Mapped[str | None] = mapped_column(Text)
+    cleaned_text: Mapped[str | None] = mapped_column(Text)
+    original_timezone: Mapped[str | None] = mapped_column(String(64))
+    user_timezone: Mapped[str] = mapped_column(String(64), default="UTC", nullable=False)
+    reference_date: Mapped[str | None] = mapped_column(String(10))
+    processing_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     labels: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
@@ -116,6 +124,11 @@ class Attachment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     storage_key: Mapped[str | None] = mapped_column(Text)
     content_id: Mapped[str | None] = mapped_column(String(998))
     is_inline: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    extraction_status: Mapped[str] = mapped_column(
+        String(32), default="metadata_only", nullable=False
+    )
+    extracted_text: Mapped[str | None] = mapped_column(Text)
+    extraction_error: Mapped[str | None] = mapped_column(Text)
 
     email: Mapped[Email] = relationship(back_populates="attachments")
 

@@ -1,6 +1,6 @@
 import asyncio
 import base64
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from email.header import decode_header, make_header
 from email.utils import getaddresses, parsedate_to_datetime
@@ -15,6 +15,12 @@ from app.core.config import Settings
 from app.core.errors import AppError
 from app.db.models.email import Attachment, Email, EmailThread
 from app.db.models.identity import EmailAccount
+from app.db.models.productivity import UserPreference
+from app.services.email_processing import (
+    ALLOWED_ATTACHMENT_TYPES,
+    extract_attachment_text,
+    process_email_content,
+)
 from app.services.google_oauth import GoogleOAuthService
 
 
@@ -56,6 +62,9 @@ class ParsedAttachment:
     size_bytes: int | None
     content_id: str | None
     is_inline: bool
+    extraction_status: str = "metadata_only"
+    extracted_text: str | None = None
+    extraction_error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -69,6 +78,12 @@ class ParsedGmailMessage:
     snippet: str
     body_text: str
     body_html: str | None
+    raw_body_html: str | None
+    cleaned_text: str
+    original_timezone: str
+    user_timezone: str
+    reference_date: str
+    processing_metadata: dict[str, Any]
     received_at: datetime
     sent_at: datetime | None
     labels: list[str]
@@ -97,6 +112,13 @@ def _decode_base64url(value: str | None) -> str:
     padding = "=" * (-len(value) % 4)
     raw = base64.urlsafe_b64decode(value + padding)
     return raw.decode("utf-8", errors="replace")
+
+
+def _decode_base64url_bytes(value: str | None) -> bytes:
+    if not value:
+        return b""
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
 
 
 def _decode_header(value: str | None) -> str:
@@ -163,7 +185,9 @@ def _walk_parts(
         _walk_parts(child, texts=texts, htmls=htmls, attachments=attachments)
 
 
-def parse_gmail_message(payload: dict[str, Any]) -> ParsedGmailMessage:
+def parse_gmail_message(
+    payload: dict[str, Any], *, user_timezone: str = "Asia/Singapore"
+) -> ParsedGmailMessage:
     message_payload = payload.get("payload", {})
     headers = _header_map(message_payload)
     texts: list[str] = []
@@ -202,6 +226,14 @@ def parse_gmail_message(payload: dict[str, Any]) -> ParsedGmailMessage:
         except (TypeError, ValueError, OverflowError):
             sent_at = None
 
+    effective_sent_at = sent_at or internal_date
+    processed = process_email_content(
+        body_html=body_html,
+        body_text=body_text or payload.get("snippet", ""),
+        sent_at=effective_sent_at,
+        user_timezone=user_timezone,
+    )
+
     labels = payload.get("labelIds", [])
     return ParsedGmailMessage(
         provider_message_id=payload["id"],
@@ -211,8 +243,17 @@ def parse_gmail_message(payload: dict[str, Any]) -> ParsedGmailMessage:
         recipients=recipients,
         subject=_decode_header(headers.get("subject")) or "(no subject)",
         snippet=payload.get("snippet", ""),
-        body_text=body_text or payload.get("snippet", ""),
-        body_html=body_html,
+        body_text=processed.plain_text,
+        body_html=processed.safe_html,
+        raw_body_html=body_html,
+        cleaned_text=processed.cleaned_text,
+        original_timezone=processed.original_timezone,
+        user_timezone=processed.user_timezone,
+        reference_date=processed.reference_date,
+        processing_metadata={
+            "removed_sections": processed.removed_sections,
+            "processor_version": "email-processing-v1",
+        },
         received_at=internal_date,
         sent_at=sent_at,
         labels=labels,
@@ -313,6 +354,80 @@ class GmailSyncService:
         self._raise_for_gmail(response, "GMAIL_MESSAGE_FAILED")
         return response.json()
 
+    async def _process_attachments(
+        self,
+        client: httpx.AsyncClient,
+        access_token: str,
+        message: ParsedGmailMessage,
+    ) -> ParsedGmailMessage:
+        processed: list[ParsedAttachment] = []
+        for index, attachment in enumerate(message.attachments):
+            if attachment.is_inline:
+                processed.append(replace(attachment, extraction_status="inline_skipped"))
+                continue
+            if index >= self.settings.attachment_max_per_email:
+                processed.append(
+                    replace(
+                        attachment,
+                        extraction_status="limit_skipped",
+                        extraction_error="attachment_count_limit",
+                    )
+                )
+                continue
+            if attachment.mime_type not in ALLOWED_ATTACHMENT_TYPES:
+                processed.append(
+                    replace(
+                        attachment,
+                        extraction_status="unsupported",
+                        extraction_error="attachment_type_not_allowed",
+                    )
+                )
+                continue
+            if (
+                attachment.size_bytes is not None
+                and attachment.size_bytes > self.settings.attachment_max_size_bytes
+            ):
+                processed.append(
+                    replace(
+                        attachment,
+                        extraction_status="too_large",
+                        extraction_error="attachment_size_limit",
+                    )
+                )
+                continue
+
+            response = await self._request(
+                client,
+                f"{GMAIL_API_BASE}/messages/{message.provider_message_id}/attachments/"
+                f"{attachment.provider_attachment_id}",
+                access_token=access_token,
+            )
+            if response.is_error:
+                processed.append(
+                    replace(
+                        attachment,
+                        extraction_status="failed",
+                        extraction_error=f"gmail_attachment_http_{response.status_code}",
+                    )
+                )
+                continue
+            content = _decode_base64url_bytes(response.json().get("data"))
+            extraction = extract_attachment_text(
+                content=content,
+                filename=attachment.filename,
+                mime_type=attachment.mime_type,
+                max_size_bytes=self.settings.attachment_max_size_bytes,
+            )
+            processed.append(
+                replace(
+                    attachment,
+                    extraction_status=extraction.status,
+                    extracted_text=extraction.extracted_text,
+                    extraction_error=extraction.error,
+                )
+            )
+        return replace(message, attachments=processed)
+
     async def sync(
         self, db: Session, account: EmailAccount, *, limit: int
     ) -> GmailSyncResult:
@@ -362,6 +477,11 @@ class GmailSyncService:
 
             created = updated = skipped = failed = 0
             parsed_messages: list[ParsedGmailMessage] = []
+            user_timezone = db.scalar(
+                select(UserPreference.timezone).where(
+                    UserPreference.user_id == account.user_id
+                )
+            ) or self.settings.email_user_timezone
             for raw in raw_messages:
                 if isinstance(raw, Exception):
                     failed += 1
@@ -369,9 +489,30 @@ class GmailSyncService:
                     skipped += 1
                 else:
                     try:
-                        parsed_messages.append(parse_gmail_message(raw))
+                        parsed_messages.append(
+                            parse_gmail_message(
+                                raw, user_timezone=user_timezone
+                            )
+                        )
                     except (KeyError, TypeError, ValueError):
                         failed += 1
+
+            async with httpx.AsyncClient(timeout=30) as attachment_client:
+                attachment_results = await asyncio.gather(
+                    *[
+                        self._process_attachments(
+                            attachment_client, access_token, parsed
+                        )
+                        for parsed in parsed_messages
+                    ],
+                    return_exceptions=True,
+                )
+            parsed_messages = [
+                result if isinstance(result, ParsedGmailMessage) else original
+                for original, result in zip(
+                    parsed_messages, attachment_results, strict=True
+                )
+            ]
 
             for parsed in parsed_messages:
                 was_created = self._upsert_message(db, account, parsed)
@@ -468,6 +609,12 @@ class GmailSyncService:
         email.snippet = parsed.snippet
         email.body_text = parsed.body_text
         email.body_html = parsed.body_html
+        email.raw_body_html = parsed.raw_body_html
+        email.cleaned_text = parsed.cleaned_text
+        email.original_timezone = parsed.original_timezone
+        email.user_timezone = parsed.user_timezone
+        email.reference_date = parsed.reference_date
+        email.processing_metadata = parsed.processing_metadata
         email.received_at = parsed.received_at
         email.sent_at = parsed.sent_at
         email.labels = parsed.labels
@@ -486,8 +633,21 @@ class GmailSyncService:
                         size_bytes=item.size_bytes,
                         content_id=item.content_id,
                         is_inline=item.is_inline,
+                        extraction_status=item.extraction_status,
+                        extracted_text=item.extracted_text,
+                        extraction_error=item.extraction_error,
                     )
                 )
+            else:
+                existing = next(
+                    attachment
+                    for attachment in email.attachments
+                    if attachment.provider_attachment_id
+                    == item.provider_attachment_id
+                )
+                existing.extraction_status = item.extraction_status
+                existing.extracted_text = item.extracted_text
+                existing.extraction_error = item.extraction_error
 
         thread.subject = parsed.subject or thread.subject
         thread.snippet = parsed.snippet or thread.snippet

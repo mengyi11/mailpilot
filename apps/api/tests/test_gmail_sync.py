@@ -53,6 +53,9 @@ def test_parse_multipart_gmail_message_and_attachment_metadata() -> None:
     assert parsed.recipients["to"][0]["email"] == "bob@example.com"
     assert parsed.body_text == "Hello from Gmail"
     assert parsed.body_html == "<p>Hello <b>from Gmail</b></p>"
+    assert parsed.raw_body_html == "<p>Hello <b>from Gmail</b></p>"
+    assert parsed.cleaned_text == "Hello from Gmail"
+    assert parsed.reference_date
     assert parsed.is_read is False
     assert parsed.is_starred is True
     assert parsed.attachments[0].provider_attachment_id == "attachment-1"
@@ -110,3 +113,5 @@ def test_html_text_fallback_ignores_css_and_script_content() -> None:
     assert "margin" not in parsed.body_text
     assert "alert" not in parsed.body_text
     assert parsed.body_text == "Visible title\nVisible body"
+    assert "script" not in (parsed.body_html or "")
+    assert "alert" in (parsed.raw_body_html or "")
