@@ -106,7 +106,7 @@ export function Sidebar({
               Gmail Workspace
             </p>
             <p className="text-sidebar-foreground/65 mt-1 text-xs leading-5">
-              已连接真实 Gmail，显示最近同步的 100 封邮件。
+              已连接真实 Gmail，显示最近同步的 15 封邮件。
             </p>
           </div>
         ) : null}

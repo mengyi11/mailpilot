@@ -14,11 +14,11 @@ import { apiRequest } from "@/lib/api-client";
 import { emailsSchema, gmailSyncResultSchema } from "@/lib/email-schema";
 
 function getEmails() {
-  return apiRequest("/gmail/emails?limit=100", { schema: emailsSchema });
+  return apiRequest("/gmail/emails?limit=15", { schema: emailsSchema });
 }
 
 function syncGmail() {
-  return apiRequest("/gmail/sync?limit=100", {
+  return apiRequest("/gmail/sync?limit=15", {
     method: "POST",
     schema: gmailSyncResultSchema,
   });
