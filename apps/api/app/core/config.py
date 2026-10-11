@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     email_user_timezone: str = "Asia/Singapore"
     attachment_max_size_bytes: int = 10 * 1024 * 1024
     attachment_max_per_email: int = 10
+    dify_base_url: str = "https://api.dify.ai/v1"
+    dify_api_key: str = ""
+    dify_app_id: str = "f18db7c0-9734-4d64-a0c4-110293778873"
+    dify_fast_model: str = "gpt-5-mini"
+    dify_strong_model: str = "gpt-5"
+    dify_embedding_model: str = "text-embedding-3-small"
 
 
 @lru_cache
