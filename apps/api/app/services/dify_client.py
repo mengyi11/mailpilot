@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any, Literal
 
@@ -77,13 +78,27 @@ class DifyClient:
         *,
         response_mode: Literal["blocking", "streaming"] = "blocking",
     ) -> DifyWorkflowResponse:
+        if self.settings.dify_mock_mode:
+            return self._mock_workflow_response(email)
+
         if not self.settings.dify_api_key:
             raise DifyConfigurationError(
                 "DIFY_API_KEY is missing; publish the Dify workflow and add its key to apps/api/.env"
             )
 
+        inputs = email.to_workflow_inputs()
+        max_chars = max(self.settings.dify_max_input_chars, 1000)
+        if len(inputs["body"]) > max_chars:
+            head_length = int(max_chars * 0.75)
+            tail_length = max_chars - head_length
+            inputs["body"] = (
+                inputs["body"][:head_length]
+                + "\n\n[中间内容因 Token 成本限制已省略]\n\n"
+                + inputs["body"][-tail_length:]
+            )
+
         payload = {
-            "inputs": email.to_workflow_inputs(),
+            "inputs": inputs,
             "response_mode": response_mode,
             "user": email.user_id,
         }
@@ -122,3 +137,42 @@ class DifyClient:
         if result.data.status != "succeeded":
             raise DifyAPIError(result.data.error or f"Dify workflow ended with {result.data.status}")
         return result
+
+    @staticmethod
+    def _mock_workflow_response(email: DifyEmailInput) -> DifyWorkflowResponse:
+        """Return deterministic UI-test data without sending anything to Dify."""
+        analysis = {
+            "email_id": email.email_id,
+            "category": "模拟数据",
+            "summary": (
+                f"这是“{email.subject}”的本地模拟分析结果。"
+                "本次请求没有调用 Dify 或大模型，因此不会消耗 Token。"
+            ),
+            "translation_needed": email.language not in {"zh", "zh-CN", "zh-TW"},
+            "actions": [],
+            "calendar_candidates": [
+                {
+                    "title": "模拟日历候选",
+                    "start": email.sent_at.isoformat(),
+                    "end": None,
+                    "timezone": email.timezone,
+                    "location": "MailPilot 测试环境",
+                    "description": "仅用于测试前端排版，不代表邮件真实内容。",
+                    "evidence": "DIFY_MOCK_MODE=true 生成的模拟候选",
+                    "confidence": 0.95,
+                }
+            ],
+        }
+        return DifyWorkflowResponse(
+            workflow_run_id=f"mock-{email.email_id}",
+            task_id=f"mock-task-{email.email_id}",
+            data=DifyWorkflowData(
+                id=f"mock-{email.email_id}",
+                workflow_id="local-mock-workflow",
+                status="succeeded",
+                outputs={"analysis": json.dumps(analysis, ensure_ascii=False)},
+                elapsed_time=0.0,
+                total_tokens=0,
+                total_steps=0,
+            ),
+        )

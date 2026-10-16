@@ -23,6 +23,7 @@ import { HtmlEmailBody } from "@/components/mail/html-email-body";
 import { ReplyDraftDrawer } from "@/components/mail/reply-draft-drawer";
 import { RichEmailBody } from "@/components/mail/rich-email-body";
 import { Button } from "@/components/ui/button";
+import type { AnalyzeEmailResponse } from "@/lib/email-schema";
 import type { EmailDetailData } from "@/types/email";
 
 function formatDate(value: string) {
@@ -32,11 +33,54 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function EmailDetail({ email }: { email: EmailDetailData }) {
+type EmailDetailProps = {
+  email: EmailDetailData;
+  analysis?: AnalyzeEmailResponse;
+  isAnalyzing: boolean;
+  analysisError: Error | null;
+  onAnalyze: () => void;
+};
+
+export function EmailDetail({
+  email,
+  analysis,
+  isAnalyzing,
+  analysisError,
+  onAnalyze,
+}: EmailDetailProps) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [messagePanePercent, setMessagePanePercent] = useState(62);
   const detailGridRef = useRef<HTMLDivElement>(null);
+  const confidenceValues = [
+    ...(analysis?.calendarCandidates.map((item) => item.confidence) ?? []),
+    ...(analysis?.actions.flatMap((item) =>
+      item.confidence == null ? [] : [item.confidence],
+    ) ?? []),
+  ];
+  const overview = analysis
+    ? {
+        summary: analysis.summary,
+        category: analysis.category,
+        priority: email.priority,
+        confidence:
+          confidenceValues.length > 0
+            ? confidenceValues.reduce((total, value) => total + value, 0) /
+              confidenceValues.length
+            : 0,
+      }
+    : email.aiOverview;
+  const calendarDrafts = analysis
+    ? analysis.calendarCandidates.map((candidate) => ({
+        id: candidate.id,
+        title: candidate.title,
+        startsAt: candidate.startsAt,
+        endsAt: candidate.endsAt,
+        timezone: candidate.timezone,
+        location: candidate.location,
+        evidence: candidate.evidence,
+      }))
+    : email.calendarDrafts;
 
   function resizeMessagePane(nextPercent: number) {
     setMessagePanePercent(Math.min(72, Math.max(48, nextPercent)));
@@ -266,11 +310,20 @@ export function EmailDetail({ email }: { email: EmailDetailData }) {
           </button>
 
           <aside
-            className="flex min-h-[520px] flex-col gap-3 overflow-hidden xl:min-h-0 xl:pl-1"
+            className="flex min-h-screen flex-col gap-4 overflow-hidden xl:min-h-0 xl:pl-1"
             aria-label="AI邮件信息"
           >
-            <AIOverviewCard overview={email.aiOverview} />
-            <CalendarDraftCard drafts={email.calendarDrafts} />
+            <AIOverviewCard
+              overview={overview}
+              isAnalyzing={isAnalyzing}
+              hasAnalysis={
+                Boolean(analysis) || email.aiOverview.category !== "待分析"
+              }
+              totalTokens={analysis?.totalTokens ?? null}
+              error={analysisError}
+              onAnalyze={onAnalyze}
+            />
+            <CalendarDraftCard drafts={calendarDrafts} />
           </aside>
         </div>
       </article>

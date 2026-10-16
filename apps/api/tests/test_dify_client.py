@@ -49,7 +49,7 @@ def test_client_sends_backend_key_and_workflow_inputs() -> None:
         )
 
     async def run() -> object:
-        settings = Settings(dify_api_key="test-secret")
+        settings = Settings(dify_api_key="test-secret", dify_mock_mode=False)
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
             return await DifyClient(
                 settings, http_client=http_client
@@ -62,7 +62,22 @@ def test_client_sends_backend_key_and_workflow_inputs() -> None:
 
 def test_client_requires_api_key() -> None:
     async def run() -> None:
-        await DifyClient(Settings(dify_api_key="")).run_email_workflow(sample_email())
+        await DifyClient(
+            Settings(dify_api_key="", dify_mock_mode=False)
+        ).run_email_workflow(sample_email())
 
     with pytest.raises(DifyConfigurationError, match="DIFY_API_KEY"):
         asyncio.run(run())
+
+
+def test_mock_mode_uses_no_api_key_or_http_request() -> None:
+    result = asyncio.run(
+        DifyClient(Settings(dify_api_key="", dify_mock_mode=True)).run_email_workflow(
+            sample_email()
+        )
+    )
+
+    assert result.workflow_run_id == "mock-email-1"
+    assert result.data.total_tokens == 0
+    assert result.data.outputs is not None
+    assert "不会消耗 Token" in result.data.outputs["analysis"]

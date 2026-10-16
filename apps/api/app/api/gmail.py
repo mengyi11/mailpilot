@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.errors import AppError
+from app.db.models.ai_output import EmailAnalysis, Translation as TranslationModel
 from app.db.models.email import Email
-from app.db.models.ai_output import Translation as TranslationModel
 from app.db.models.identity import EmailAccount
+from app.db.models.productivity import CalendarDraft
 from app.db.session import get_db
 from app.services.gmail_sync import GmailSyncResult, GmailSyncService
 
@@ -137,9 +138,31 @@ async def list_gmail_emails(
             .distinct(TranslationModel.email_id)
         ).all()
     }
+    analyses: dict[UUID, EmailAnalysis] = {}
+    for item in db.scalars(
+        select(EmailAnalysis)
+        .where(EmailAnalysis.email_id.in_(email_ids))
+        .order_by(EmailAnalysis.email_id, EmailAnalysis.created_at.desc())
+    ).all():
+        analyses.setdefault(item.email_id, item)
+
+    analysis_ids = [item.id for item in analyses.values()]
+    calendar_drafts: dict[UUID, list[CalendarDraft]] = {
+        analysis_id: [] for analysis_id in analysis_ids
+    }
+    if analysis_ids:
+        for draft in db.scalars(
+            select(CalendarDraft)
+            .where(CalendarDraft.analysis_id.in_(analysis_ids))
+            .order_by(CalendarDraft.starts_at)
+        ).all():
+            if draft.analysis_id is not None:
+                calendar_drafts.setdefault(draft.analysis_id, []).append(draft)
+
     response: list[GmailEmail] = []
     for email in emails:
         saved_translation = translations.get(email.id)
+        saved_analysis = analyses.get(email.id)
         recipients = email.recipients.get("to", []) + email.recipients.get("cc", [])
         response.append(
             GmailEmail(
@@ -156,10 +179,22 @@ async def list_gmail_emails(
                 body_text=email.body_text or email.snippet or "",
                 body_html=email.body_html,
                 ai_overview=AiOverview(
-                    summary="尚未运行AI分析。邮件已从Gmail安全同步。",
-                    category="待分析",
+                    summary=(
+                        saved_analysis.summary
+                        if saved_analysis and saved_analysis.summary
+                        else "尚未运行AI分析。邮件已从Gmail安全同步。"
+                    ),
+                    category=(
+                        saved_analysis.category
+                        if saved_analysis and saved_analysis.category
+                        else "待分析"
+                    ),
                     priority="high" if "IMPORTANT" in email.labels else "normal",
-                    confidence=0,
+                    confidence=(
+                        float(saved_analysis.confidence)
+                        if saved_analysis and saved_analysis.confidence is not None
+                        else 0
+                    ),
                 ),
                 translation=Translation(
                     source_language=(
@@ -184,7 +219,23 @@ async def list_gmail_emails(
                     status="completed" if saved_translation else "pending",
                 ),
                 action_items=[],
-                calendar_drafts=[],
+                calendar_drafts=[
+                    {
+                        "id": str(draft.id),
+                        "title": draft.title,
+                        "startsAt": draft.starts_at,
+                        "endsAt": draft.ends_at,
+                        "timezone": draft.timezone,
+                        "location": draft.location,
+                        "evidence": draft.source_evidence.get("text", ""),
+                        "status": draft.status,
+                    }
+                    for draft in (
+                        calendar_drafts.get(saved_analysis.id, [])
+                        if saved_analysis
+                        else []
+                    )
+                ],
                 reply_draft=ReplyDraft(
                     subject=f"Re: {email.subject or ''}",
                     body="",

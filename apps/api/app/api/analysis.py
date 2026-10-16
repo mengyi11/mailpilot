@@ -212,9 +212,15 @@ async def analyze_email(
     analysis = EmailAnalysis(
         email_id=email.id,
         status="completed",
-        model_provider="openai",
-        model_name=get_settings().dify_fast_model,
-        prompt_version="dify-email-analysis-v1",
+        model_provider=("mock" if get_settings().dify_mock_mode else "openai"),
+        model_name=(
+            "local-mock" if get_settings().dify_mock_mode else get_settings().dify_fast_model
+        ),
+        prompt_version=(
+            "local-mock-v1"
+            if get_settings().dify_mock_mode
+            else "dify-email-analysis-v1"
+        ),
         detected_language=language,
         summary=result.summary,
         category=result.category,

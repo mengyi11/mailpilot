@@ -11,7 +11,11 @@ import {
   InboxLoadingState,
 } from "@/components/mail/inbox-states";
 import { apiRequest } from "@/lib/api-client";
-import { emailsSchema, gmailSyncResultSchema } from "@/lib/email-schema";
+import {
+  analyzeEmailResponseSchema,
+  emailsSchema,
+  gmailSyncResultSchema,
+} from "@/lib/email-schema";
 
 function getEmails() {
   return apiRequest("/gmail/emails?limit=15", { schema: emailsSchema });
@@ -21,6 +25,13 @@ function syncGmail() {
   return apiRequest("/gmail/sync?limit=15", {
     method: "POST",
     schema: gmailSyncResultSchema,
+  });
+}
+
+function analyzeEmail(emailId: string) {
+  return apiRequest(`/emails/${emailId}/analyze`, {
+    method: "POST",
+    schema: analyzeEmailResponseSchema,
   });
 }
 
@@ -39,6 +50,12 @@ export function InboxPage() {
   });
   const syncMutation = useMutation({
     mutationFn: syncGmail,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
+    },
+  });
+  const analysisMutation = useMutation({
+    mutationFn: analyzeEmail,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
     },
@@ -82,7 +99,22 @@ export function InboxPage() {
             isSyncing={syncMutation.isPending}
             syncMessage={syncMessage}
           />
-          {selectedEmail ? <EmailDetail email={selectedEmail} /> : null}
+          {selectedEmail ? (
+            <EmailDetail
+              key={selectedEmail.id}
+              email={selectedEmail}
+              analysis={
+                analysisMutation.data?.emailId === selectedEmail.id
+                  ? analysisMutation.data
+                  : undefined
+              }
+              isAnalyzing={analysisMutation.isPending}
+              analysisError={
+                analysisMutation.isError ? analysisMutation.error : null
+              }
+              onAnalyze={() => analysisMutation.mutate(selectedEmail.id)}
+            />
+          ) : null}
         </div>
       )}
     </div>

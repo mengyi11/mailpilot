@@ -82,3 +82,39 @@ export const gmailSyncResultSchema = z.object({
   mode: z.enum(["full", "incremental"]),
   historyId: z.string().nullable(),
 });
+
+export const analyzeEmailResponseSchema = z.object({
+  analysisId: z.uuid(),
+  emailId: z.uuid(),
+  status: z.literal("completed"),
+  category: z.string(),
+  summary: z.string(),
+  translationNeeded: z.boolean(),
+  actions: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string().nullable().optional(),
+      dueAt: z.iso.datetime({ offset: true }).nullable().optional(),
+      evidence: z.string().nullable().optional(),
+      confidence: z.number().min(0).max(1).nullable().optional(),
+    }),
+  ),
+  calendarCandidates: z.array(
+    z.object({
+      id: z.uuid(),
+      title: z.string(),
+      startsAt: z.iso.datetime({ offset: true }),
+      endsAt: z.iso.datetime({ offset: true }).nullable(),
+      timezone: z.string(),
+      location: z.string().nullable(),
+      evidence: z.string(),
+      confidence: z.number().min(0).max(1),
+      status: z.string(),
+    }),
+  ),
+  workflowRunId: z.string(),
+  elapsedTime: z.number().nullable(),
+  totalTokens: z.number().int().nonnegative().nullable(),
+});
+
+export type AnalyzeEmailResponse = z.infer<typeof analyzeEmailResponseSchema>;
