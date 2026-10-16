@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.api.analysis import router as analysis_router
 from app.api.demo import router as demo_router
 from app.api.google_auth import router as google_auth_router
 from app.api.gmail import router as gmail_router
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(application)
     application.include_router(demo_router)
+    application.include_router(analysis_router)
     application.include_router(google_auth_router)
     application.include_router(gmail_router)
 
