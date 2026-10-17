@@ -120,3 +120,32 @@ After migration `0010`, normalize emails that were already synchronized:
 ```bash
 PYTHONPATH=. python scripts/process_existing_emails.py
 ```
+
+## Dify workflow and reusable skills
+
+`POST /emails/{email_id}/analyze` loads only the synchronized email's cleaned
+text, builds the eight-field Dify input contract, calls the published workflow,
+validates its structured output, and then stores the analysis and pending
+calendar drafts. `DIFY_MOCK_MODE=true` is the safe default for UI and backend
+work that does not need an LLM; set it to `false` only for intentional real
+workflow tests.
+
+The reusable skill contracts live in `app/skills`:
+
+- `TriageSkill`: category and priority; fails closed on invalid output.
+- `SummarizeSkill`: concise Chinese and English summaries; fails closed.
+- `TranslateSkill`: EN/ZH translation with optional OCR text; returns the
+  original content if translation fails. Its separate Dify Workflow runs only
+  after `POST /emails/{email_id}/translate`; completed translations are cached
+  in the `translations` table so repeated language toggles cost zero tokens.
+- `ActionExtractionSkill`: evidence-backed actions; returns an empty list on
+  failure.
+- `ScheduleSkill`: timezone-aware calendar candidates; never writes to the
+  calendar and returns an empty list on failure.
+- `ReplySkill`: approval-required reply drafts; never sends mail and fails
+  closed.
+
+Every definition declares an input schema, output schema, prompt version,
+allowed tools, retry budget, and failure strategy. Run `pytest
+tests/test_skills.py` to exercise every skill independently without calling
+Dify or spending model tokens.

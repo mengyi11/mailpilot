@@ -27,6 +27,8 @@ class EmailAddress(ApiModel):
 
 class AiOverview(ApiModel):
     summary: str
+    summary_en: str | None = None
+    summary_zh: str | None = None
     category: str
     priority: str
     confidence: float

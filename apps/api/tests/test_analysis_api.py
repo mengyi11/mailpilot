@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.api.analysis import _parse_dify_analysis
+from app.api.analysis import _parse_dify_analysis, _split_bilingual_summary
 from app.core.errors import AppError
 
 
@@ -69,3 +69,21 @@ def test_rejects_out_of_range_confidence() -> None:
                 }
             }
         )
+
+
+def test_splits_bilingual_summary_with_optional_blank_line() -> None:
+    display, english, chinese = _split_bilingual_summary(
+        "ZH: 中文摘要。\n\nEN: English summary."
+    )
+
+    assert display == "English summary."
+    assert english == "English summary."
+    assert chinese == "中文摘要。"
+
+
+def test_keeps_legacy_single_language_summary() -> None:
+    display, english, chinese = _split_bilingual_summary("Legacy English summary.")
+
+    assert display == "Legacy English summary."
+    assert english == "Legacy English summary."
+    assert chinese is None

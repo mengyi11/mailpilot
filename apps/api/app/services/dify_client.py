@@ -145,8 +145,8 @@ class DifyClient:
             "email_id": email.email_id,
             "category": "模拟数据",
             "summary": (
-                f"这是“{email.subject}”的本地模拟分析结果。"
-                "本次请求没有调用 Dify 或大模型，因此不会消耗 Token。"
+                f"ZH: 这是“{email.subject}”的本地模拟分析结果。本次请求没有调用 Dify 或大模型，因此不会消耗 Token。\n"
+                f"EN: This is a local mock analysis of “{email.subject}”. No Dify or LLM request was made, so it used zero tokens."
             ),
             "translation_needed": email.language not in {"zh", "zh-CN", "zh-TW"},
             "actions": [],

@@ -2,11 +2,13 @@
 
 import {
   AlertCircle,
+  Languages,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { AIOverview } from "@/types/email";
@@ -34,6 +36,14 @@ export function AIOverviewCard({
   error,
   onAnalyze,
 }: AIOverviewCardProps) {
+  const [summaryLanguage, setSummaryLanguage] = useState<"en" | "zh">(
+    overview.summaryEn ? "en" : "zh",
+  );
+  const hasBilingualSummary = Boolean(overview.summaryEn && overview.summaryZh);
+  const displayedSummary =
+    summaryLanguage === "zh"
+      ? (overview.summaryZh ?? overview.summary)
+      : (overview.summaryEn ?? overview.summary);
   const statusText = isAnalyzing
     ? "正在提取摘要和日历候选…"
     : error
@@ -92,7 +102,7 @@ export function AIOverviewCard({
       <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-4">
         <div className="border-primary/10 bg-primary/[0.045] min-h-0 flex-1 overflow-hidden rounded-xl border px-3.5 py-3">
           <p className="text-foreground/85 h-full overflow-y-auto pr-1 text-[13px] leading-6">
-            {overview.summary}
+            {displayedSummary}
           </p>
         </div>
         <div className="text-muted-foreground flex min-w-0 shrink-0 items-center gap-2 text-[10px]">
@@ -109,6 +119,25 @@ export function AIOverviewCard({
             />
             {Math.round(overview.confidence * 100)}%
           </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            className="ml-auto rounded-full"
+            disabled={!hasBilingualSummary}
+            onClick={() =>
+              setSummaryLanguage((language) =>
+                language === "en" ? "zh" : "en",
+              )
+            }
+            title={
+              hasBilingualSummary
+                ? "切换AI摘要语言"
+                : "重新分析后可使用中英文摘要"
+            }
+          >
+            <Languages data-icon="inline-start" aria-hidden="true" />
+            {summaryLanguage === "en" ? "中文" : "EN"}
+          </Button>
         </div>
       </div>
     </section>

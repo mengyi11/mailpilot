@@ -22,6 +22,8 @@ export const emailDetailSchema = z.object({
   bodyHtml: z.string().nullable(),
   aiOverview: z.object({
     summary: z.string(),
+    summaryEn: z.string().nullable().default(null),
+    summaryZh: z.string().nullable().default(null),
     category: z.string(),
     priority: prioritySchema,
     confidence: z.number().min(0).max(1),
@@ -89,6 +91,8 @@ export const analyzeEmailResponseSchema = z.object({
   status: z.literal("completed"),
   category: z.string(),
   summary: z.string(),
+  summaryEn: z.string().nullable(),
+  summaryZh: z.string().nullable(),
   translationNeeded: z.boolean(),
   actions: z.array(
     z.object({
@@ -117,4 +121,26 @@ export const analyzeEmailResponseSchema = z.object({
   totalTokens: z.number().int().nonnegative().nullable(),
 });
 
+export const translateEmailResponseSchema = z.object({
+  emailId: z.uuid(),
+  sourceLanguage: z.string(),
+  targetLanguage: z.string(),
+  translatedBody: z.string(),
+  translatedHtml: z.string().nullable(),
+  ocrBlocks: z.array(
+    z.object({
+      imageIndex: z.number().int().nonnegative(),
+      sourceText: z.string(),
+      translatedText: z.string(),
+    }),
+  ),
+  status: z.literal("completed"),
+  cached: z.boolean(),
+  workflowRunId: z.string().nullable(),
+  totalTokens: z.number().int().nullable(),
+});
+
 export type AnalyzeEmailResponse = z.infer<typeof analyzeEmailResponseSchema>;
+export type TranslateEmailResponse = z.infer<
+  typeof translateEmailResponseSchema
+>;

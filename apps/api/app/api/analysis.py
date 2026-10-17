@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -84,6 +85,8 @@ class AnalyzeEmailResponse(ApiModel):
     status: str
     category: str
     summary: str
+    summary_en: str | None
+    summary_zh: str | None
     translation_needed: bool
     actions: list[ActionItem]
     calendar_candidates: list[CalendarDraftResponse]
@@ -123,6 +126,30 @@ def _sender_text(sender: dict[str, Any]) -> str:
     if name and address:
         return f"{name} <{address}>"
     return address or name or "unknown"
+
+
+def _split_bilingual_summary(summary: str) -> tuple[str, str | None, str | None]:
+    """Split the compact ZH/EN contract while remaining compatible with old runs."""
+    normalized = summary.strip()
+    match = re.fullmatch(
+        r"\s*ZH\s*[:：]\s*(.*?)\s*\n+\s*EN\s*[:：]\s*(.*?)\s*",
+        normalized,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    if match:
+        zh, en = (value.strip() for value in match.groups())
+        return en, en, zh
+    match = re.fullmatch(
+        r"\s*EN\s*[:：]\s*(.*?)\s*\n+\s*ZH\s*[:：]\s*(.*?)\s*",
+        normalized,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    if match:
+        en, zh = (value.strip() for value in match.groups())
+        return en, en, zh
+    if any("\u4e00" <= character <= "\u9fff" for character in normalized):
+        return normalized, None, normalized
+    return normalized, normalized, None
 
 
 @router.post(
@@ -198,8 +225,11 @@ async def analyze_email(
             status_code=502,
         )
 
+    display_summary, summary_en, summary_zh = _split_bilingual_summary(result.summary)
     completed_at = datetime.now(UTC)
     structured_output = result.model_dump(mode="json", by_alias=False)
+    structured_output["summary_en"] = summary_en
+    structured_output["summary_zh"] = summary_zh
     evidence = [
         {
             "type": "calendar_candidate",
@@ -222,7 +252,7 @@ async def analyze_email(
             else "dify-email-analysis-v1"
         ),
         detected_language=language,
-        summary=result.summary,
+        summary=display_summary,
         category=result.category,
         action_items=[item.model_dump(mode="json") for item in result.actions],
         extracted_dates=[
@@ -270,7 +300,9 @@ async def analyze_email(
         email_id=email.id,
         status=analysis.status,
         category=result.category,
-        summary=result.summary,
+        summary=display_summary,
+        summary_en=summary_en,
+        summary_zh=summary_zh,
         translation_needed=result.translation_needed,
         actions=result.actions,
         calendar_candidates=[

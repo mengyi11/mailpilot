@@ -35,6 +35,8 @@ class EmailAddress(ApiModel):
 
 class AiOverview(ApiModel):
     summary: str
+    summary_en: str | None = None
+    summary_zh: str | None = None
     category: str
     priority: str
     confidence: float
@@ -183,6 +185,16 @@ async def list_gmail_emails(
                         saved_analysis.summary
                         if saved_analysis and saved_analysis.summary
                         else "尚未运行AI分析。邮件已从Gmail安全同步。"
+                    ),
+                    summary_en=(
+                        saved_analysis.structured_output.get("summary_en")
+                        if saved_analysis
+                        else None
+                    ),
+                    summary_zh=(
+                        saved_analysis.structured_output.get("summary_zh")
+                        if saved_analysis
+                        else None
                     ),
                     category=(
                         saved_analysis.category

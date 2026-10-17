@@ -15,6 +15,7 @@ import {
   analyzeEmailResponseSchema,
   emailsSchema,
   gmailSyncResultSchema,
+  translateEmailResponseSchema,
 } from "@/lib/email-schema";
 
 function getEmails() {
@@ -32,6 +33,14 @@ function analyzeEmail(emailId: string) {
   return apiRequest(`/emails/${emailId}/analyze`, {
     method: "POST",
     schema: analyzeEmailResponseSchema,
+  });
+}
+
+function translateEmail(emailId: string) {
+  return apiRequest(`/emails/${emailId}/translate`, {
+    method: "POST",
+    body: JSON.stringify({ targetLanguage: "zh-CN" }),
+    schema: translateEmailResponseSchema,
   });
 }
 
@@ -56,6 +65,12 @@ export function InboxPage() {
   });
   const analysisMutation = useMutation({
     mutationFn: analyzeEmail,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
+    },
+  });
+  const translationMutation = useMutation({
+    mutationFn: translateEmail,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
     },
@@ -113,6 +128,16 @@ export function InboxPage() {
                 analysisMutation.isError ? analysisMutation.error : null
               }
               onAnalyze={() => analysisMutation.mutate(selectedEmail.id)}
+              translation={
+                translationMutation.data?.emailId === selectedEmail.id
+                  ? translationMutation.data
+                  : undefined
+              }
+              isTranslating={translationMutation.isPending}
+              translationError={
+                translationMutation.isError ? translationMutation.error : null
+              }
+              onTranslate={() => translationMutation.mutate(selectedEmail.id)}
             />
           ) : null}
         </div>

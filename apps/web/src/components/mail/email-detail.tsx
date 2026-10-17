@@ -3,6 +3,7 @@
 import {
   GripVertical,
   Languages,
+  LoaderCircle,
   Mail,
   Maximize2,
   Minimize2,
@@ -23,7 +24,10 @@ import { HtmlEmailBody } from "@/components/mail/html-email-body";
 import { ReplyDraftDrawer } from "@/components/mail/reply-draft-drawer";
 import { RichEmailBody } from "@/components/mail/rich-email-body";
 import { Button } from "@/components/ui/button";
-import type { AnalyzeEmailResponse } from "@/lib/email-schema";
+import type {
+  AnalyzeEmailResponse,
+  TranslateEmailResponse,
+} from "@/lib/email-schema";
 import type { EmailDetailData } from "@/types/email";
 
 function formatDate(value: string) {
@@ -39,6 +43,10 @@ type EmailDetailProps = {
   isAnalyzing: boolean;
   analysisError: Error | null;
   onAnalyze: () => void;
+  translation?: TranslateEmailResponse;
+  isTranslating: boolean;
+  translationError: Error | null;
+  onTranslate: () => void;
 };
 
 export function EmailDetail({
@@ -47,11 +55,17 @@ export function EmailDetail({
   isAnalyzing,
   analysisError,
   onAnalyze,
+  translation,
+  isTranslating,
+  translationError,
+  onTranslate,
 }: EmailDetailProps) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [messagePanePercent, setMessagePanePercent] = useState(62);
   const detailGridRef = useRef<HTMLDivElement>(null);
+  const activeTranslation = translation ?? email.translation;
+
   const confidenceValues = [
     ...(analysis?.calendarCandidates.map((item) => item.confidence) ?? []),
     ...(analysis?.actions.flatMap((item) =>
@@ -61,6 +75,8 @@ export function EmailDetail({
   const overview = analysis
     ? {
         summary: analysis.summary,
+        summaryEn: analysis.summaryEn,
+        summaryZh: analysis.summaryZh,
         category: analysis.category,
         priority: email.priority,
         confidence:
@@ -185,7 +201,7 @@ export function EmailDetail({
                   </h3>
                   {showTranslation ? (
                     <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[10px]">
-                      {email.translation.targetLanguage}
+                      {activeTranslation.targetLanguage}
                     </span>
                   ) : null}
                 </span>
@@ -222,10 +238,32 @@ export function EmailDetail({
                   <Button
                     variant={showTranslation ? "secondary" : "ghost"}
                     size="xs"
-                    onClick={() => setShowTranslation((value) => !value)}
+                    disabled={isTranslating}
+                    onClick={() => {
+                      if (showTranslation) {
+                        setShowTranslation(false);
+                      } else if (activeTranslation.status === "completed") {
+                        setShowTranslation(true);
+                      } else {
+                        setShowTranslation(true);
+                        onTranslate();
+                      }
+                    }}
                   >
-                    <Languages data-icon="inline-start" aria-hidden="true" />
-                    {showTranslation ? "查看原文" : "翻译"}
+                    {isTranslating ? (
+                      <LoaderCircle
+                        className="animate-spin"
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Languages data-icon="inline-start" aria-hidden="true" />
+                    )}
+                    {isTranslating
+                      ? "翻译中"
+                      : showTranslation
+                        ? "查看原文"
+                        : "翻译"}
                   </Button>
                   <Button variant="ghost" size="xs">
                     <Paperclip data-icon="inline-start" aria-hidden="true" />
@@ -236,21 +274,24 @@ export function EmailDetail({
               <div className="text-foreground/80 mt-3 min-h-0 flex-1 overflow-y-auto">
                 {!showTranslation && email.bodyHtml ? (
                   <HtmlEmailBody html={email.bodyHtml} title={email.subject} />
-                ) : showTranslation && email.translation.translatedHtml ? (
+                ) : showTranslation && activeTranslation.translatedHtml ? (
                   <HtmlEmailBody
-                    html={email.translation.translatedHtml}
+                    html={activeTranslation.translatedHtml}
                     title={`${email.subject}（译文）`}
                   />
                 ) : showTranslation &&
-                  email.translation.status !== "completed" ? (
+                  activeTranslation.status !== "completed" ? (
                   <div className="flex min-h-[360px] items-center justify-center px-6 text-center">
                     <div>
                       <p className="text-foreground text-sm font-medium">
                         尚未生成保留排版的译文
                       </p>
                       <p className="text-muted-foreground mt-2 max-w-sm text-xs leading-6">
-                        翻译 Agent 接入后会保留 HTML
-                        标签和样式，并对图片文字执行 OCR。
+                        {translationError
+                          ? `翻译失败：${translationError.message}`
+                          : isTranslating
+                            ? "TranslateSkill 正在保留邮件排版并生成译文。"
+                            : "点击翻译后，TranslateSkill 会按需生成并缓存译文。"}
                       </p>
                     </div>
                   </div>
@@ -259,7 +300,7 @@ export function EmailDetail({
                     <RichEmailBody
                       content={
                         showTranslation
-                          ? email.translation.translatedBody
+                          ? activeTranslation.translatedBody
                           : email.bodyText
                       }
                     />
@@ -269,13 +310,13 @@ export function EmailDetail({
               {showTranslation ? (
                 <div className="text-muted-foreground mt-3 shrink-0 border-t pt-3 text-[11px]">
                   <p>AI译文和OCR结果仅供参考，执行操作前请核对邮件原文。</p>
-                  {email.translation.ocrBlocks.length > 0 ? (
+                  {activeTranslation.ocrBlocks.length > 0 ? (
                     <details className="mt-2">
                       <summary className="text-foreground cursor-pointer font-medium">
-                        查看图片文字翻译（{email.translation.ocrBlocks.length}）
+                        查看图片文字翻译（{activeTranslation.ocrBlocks.length}）
                       </summary>
                       <div className="mt-2 max-h-32 space-y-2 overflow-y-auto">
-                        {email.translation.ocrBlocks.map((block) => (
+                        {activeTranslation.ocrBlocks.map((block) => (
                           <div
                             key={`${block.imageIndex}-${block.sourceText}`}
                             className="bg-muted rounded-lg p-2"

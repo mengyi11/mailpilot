@@ -17,6 +17,8 @@ export type EmailSummary = {
 
 export type AIOverview = {
   summary: string;
+  summaryEn: string | null;
+  summaryZh: string | null;
   category: string;
   priority: "high" | "normal" | "low";
   confidence: number;
