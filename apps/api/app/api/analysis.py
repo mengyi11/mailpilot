@@ -19,11 +19,22 @@ from app.db.models.email import Email
 from app.db.models.identity import EmailAccount
 from app.db.models.productivity import CalendarDraft
 from app.db.session import get_db
+from app.schemas.structured_output import (
+    EmailAnalysis as StructuredEmailAnalysis,
+    EmailPriority,
+    ExtractedDate,
+)
 from app.services.dify_client import (
     DifyAPIError,
     DifyClient,
     DifyConfigurationError,
     DifyEmailInput,
+)
+from app.services.schema_repair import (
+    StrongModelRepairClient,
+    decode_json_payload,
+    repair_analysis_payload,
+    safe_read_only_analysis,
 )
 
 
@@ -47,26 +58,6 @@ class ActionItem(ApiModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
 
 
-class CalendarCandidate(ApiModel):
-    title: str = Field(min_length=1)
-    start: datetime
-    end: datetime | None = None
-    timezone: str = Field(min_length=1)
-    location: str | None = None
-    description: str | None = None
-    evidence: str = Field(min_length=1)
-    confidence: float = Field(ge=0, le=1)
-
-
-class DifyAnalysisResult(ApiModel):
-    email_id: UUID
-    category: str = Field(min_length=1, max_length=64)
-    summary: str = Field(min_length=1)
-    translation_needed: bool
-    actions: list[ActionItem] = Field(default_factory=list)
-    calendar_candidates: list[CalendarCandidate] = Field(default_factory=list)
-
-
 class CalendarDraftResponse(ApiModel):
     id: UUID
     title: str
@@ -84,6 +75,7 @@ class AnalyzeEmailResponse(ApiModel):
     email_id: UUID
     status: str
     category: str
+    priority: EmailPriority
     summary: str
     summary_en: str | None
     summary_zh: str | None
@@ -93,13 +85,19 @@ class AnalyzeEmailResponse(ApiModel):
     workflow_run_id: str
     elapsed_time: float | None
     total_tokens: int | None
+    validation_mode: str
+    read_only: bool
 
 
 def get_dify_client() -> DifyClient:
     return DifyClient(get_settings())
 
 
-def _parse_dify_analysis(outputs: dict[str, Any] | None) -> DifyAnalysisResult:
+def get_repair_client() -> StrongModelRepairClient:
+    return StrongModelRepairClient(get_settings())
+
+
+def _analysis_payload(outputs: dict[str, Any] | None) -> dict[str, Any]:
     if not outputs or "analysis" not in outputs:
         raise AppError(
             code="DIFY_OUTPUT_INVALID",
@@ -107,17 +105,82 @@ def _parse_dify_analysis(outputs: dict[str, Any] | None) -> DifyAnalysisResult:
             status_code=502,
         )
 
-    raw = outputs["analysis"]
     try:
-        payload = json.loads(raw) if isinstance(raw, str) else raw
-        return DifyAnalysisResult.model_validate(payload)
-    except (json.JSONDecodeError, TypeError, ValidationError) as exc:
+        return decode_json_payload(outputs["analysis"])
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
         raise AppError(
             code="DIFY_OUTPUT_INVALID",
             message="Dify returned analysis data that failed validation.",
             status_code=502,
             details={"validation": str(exc)},
         ) from exc
+
+
+def _parse_dify_analysis(outputs: dict[str, Any] | None) -> StructuredEmailAnalysis:
+    payload = _analysis_payload(outputs)
+    try:
+        return StructuredEmailAnalysis.model_validate(payload)
+    except ValidationError as exc:
+        raise AppError(
+            code="DIFY_OUTPUT_INVALID",
+            message="Dify returned analysis data that failed validation.",
+            status_code=502,
+            details={"validation": str(exc)},
+        ) from exc
+
+
+async def _validate_or_repair_analysis(
+    outputs: dict[str, Any] | None,
+    *,
+    expected_email_id: UUID,
+    repair_client: StrongModelRepairClient,
+) -> tuple[StructuredEmailAnalysis, str, bool]:
+    try:
+        result = _parse_dify_analysis(outputs)
+        if result.email_id != expected_email_id:
+            raise AppError(
+                code="DIFY_EMAIL_ID_MISMATCH",
+                message="Dify returned a result for a different email.",
+                status_code=502,
+            )
+        return result, "strict", False
+    except AppError:
+        try:
+            payload = _analysis_payload(outputs)
+            repaired = repair_analysis_payload(
+                payload,
+                expected_email_id=expected_email_id,
+            )
+            return repaired, "schema_repair", False
+        except (AppError, TypeError, ValueError, ValidationError):
+            payload = None
+            try:
+                payload = _analysis_payload(outputs)
+            except AppError:
+                pass
+            if payload is not None:
+                try:
+                    strong_payload = await repair_client.repair(
+                        email_id=expected_email_id,
+                        raw_analysis=payload,
+                    )
+                    repaired = StructuredEmailAnalysis.model_validate(strong_payload)
+                    if repaired.email_id != expected_email_id:
+                        raise ValueError("Strong model returned a different email_id")
+                    return repaired, "strong_model_repair", False
+                except (
+                    DifyAPIError,
+                    DifyConfigurationError,
+                    TypeError,
+                    ValueError,
+                    ValidationError,
+                ):
+                    pass
+            return (
+                safe_read_only_analysis(email_id=expected_email_id, payload=payload),
+                "read_only_fallback",
+                True,
+            )
 
 
 def _sender_text(sender: dict[str, Any]) -> str:
@@ -161,6 +224,7 @@ async def analyze_email(
     email_id: UUID,
     db: Session = Depends(get_db),
     dify: DifyClient = Depends(get_dify_client),
+    repair_client: StrongModelRepairClient = Depends(get_repair_client),
 ) -> AnalyzeEmailResponse:
     row = db.execute(
         select(Email, EmailAccount)
@@ -204,7 +268,11 @@ async def analyze_email(
                 timezone=email.user_timezone,
             )
         )
-        result = _parse_dify_analysis(workflow.data.outputs)
+        result, validation_mode, read_only = await _validate_or_repair_analysis(
+            workflow.data.outputs,
+            expected_email_id=email.id,
+            repair_client=repair_client,
+        )
     except DifyConfigurationError as exc:
         raise AppError(
             code="DIFY_NOT_CONFIGURED",
@@ -230,18 +298,20 @@ async def analyze_email(
     structured_output = result.model_dump(mode="json", by_alias=False)
     structured_output["summary_en"] = summary_en
     structured_output["summary_zh"] = summary_zh
+    structured_output["validation_mode"] = validation_mode
+    structured_output["read_only"] = read_only
     evidence = [
         {
             "type": "calendar_candidate",
-            "text": item.evidence,
+            "text": item.evidence.text,
             "confidence": item.confidence,
         }
-        for item in result.calendar_candidates
+        for item in result.extracted_dates
     ]
-    confidences = [item.confidence for item in result.calendar_candidates]
+    confidences = [item.confidence for item in result.extracted_dates]
     analysis = EmailAnalysis(
         email_id=email.id,
-        status="completed",
+        status="read_only" if read_only else "completed",
         model_provider=("mock" if get_settings().dify_mock_mode else "openai"),
         model_name=(
             "local-mock" if get_settings().dify_mock_mode else get_settings().dify_fast_model
@@ -254,9 +324,10 @@ async def analyze_email(
         detected_language=language,
         summary=display_summary,
         category=result.category,
+        priority=result.priority,
         action_items=[item.model_dump(mode="json") for item in result.actions],
         extracted_dates=[
-            item.model_dump(mode="json") for item in result.calendar_candidates
+            item.model_dump(mode="json") for item in result.extracted_dates
         ],
         evidence=evidence,
         confidence=(
@@ -271,8 +342,8 @@ async def analyze_email(
     db.add(analysis)
     db.flush()
 
-    drafts: list[tuple[CalendarDraft, CalendarCandidate]] = []
-    for candidate in result.calendar_candidates:
+    drafts: list[tuple[CalendarDraft, ExtractedDate]] = []
+    for candidate in ([] if read_only else result.extracted_dates):
         draft = CalendarDraft(
             user_id=account.user_id,
             email_id=email.id,
@@ -285,7 +356,7 @@ async def analyze_email(
             timezone=candidate.timezone,
             location=candidate.location,
             source_evidence={
-                "text": candidate.evidence,
+                "text": candidate.evidence.text,
                 "confidence": candidate.confidence,
                 "workflow_run_id": workflow.workflow_run_id,
             },
@@ -300,11 +371,21 @@ async def analyze_email(
         email_id=email.id,
         status=analysis.status,
         category=result.category,
+        priority=result.priority,
         summary=display_summary,
         summary_en=summary_en,
         summary_zh=summary_zh,
         translation_needed=result.translation_needed,
-        actions=result.actions,
+        actions=[
+            ActionItem(
+                title=item.title,
+                description=item.description,
+                due_at=item.due_at,
+                evidence=item.evidence.text,
+                confidence=item.confidence,
+            )
+            for item in result.actions
+        ],
         calendar_candidates=[
             CalendarDraftResponse(
                 id=draft.id,
@@ -313,7 +394,7 @@ async def analyze_email(
                 ends_at=draft.ends_at,
                 timezone=draft.timezone,
                 location=draft.location,
-                evidence=candidate.evidence,
+                evidence=candidate.evidence.text,
                 confidence=candidate.confidence,
                 status=draft.status,
             )
@@ -322,4 +403,6 @@ async def analyze_email(
         workflow_run_id=workflow.workflow_run_id,
         elapsed_time=workflow.data.elapsed_time,
         total_tokens=workflow.data.total_tokens,
+        validation_mode=validation_mode,
+        read_only=read_only,
     )

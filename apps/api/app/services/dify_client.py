@@ -143,14 +143,16 @@ class DifyClient:
         """Return deterministic UI-test data without sending anything to Dify."""
         analysis = {
             "email_id": email.email_id,
-            "category": "模拟数据",
+            "category": "通知",
+            "priority": "normal",
             "summary": (
                 f"ZH: 这是“{email.subject}”的本地模拟分析结果。本次请求没有调用 Dify 或大模型，因此不会消耗 Token。\n"
                 f"EN: This is a local mock analysis of “{email.subject}”. No Dify or LLM request was made, so it used zero tokens."
             ),
             "translation_needed": email.language not in {"zh", "zh-CN", "zh-TW"},
+            "evidence": [],
             "actions": [],
-            "calendar_candidates": [
+            "extracted_dates": [
                 {
                     "title": "模拟日历候选",
                     "start": email.sent_at.isoformat(),
@@ -158,7 +160,11 @@ class DifyClient:
                     "timezone": email.timezone,
                     "location": "MailPilot 测试环境",
                     "description": "仅用于测试前端排版，不代表邮件真实内容。",
-                    "evidence": "DIFY_MOCK_MODE=true 生成的模拟候选",
+                    "evidence": {
+                        "text": "DIFY_MOCK_MODE=true 生成的模拟候选",
+                        "source": "email_body",
+                        "confidence": 0.95,
+                    },
                     "confidence": 0.95,
                 }
             ],

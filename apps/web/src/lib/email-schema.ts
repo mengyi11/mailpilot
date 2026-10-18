@@ -88,8 +88,9 @@ export const gmailSyncResultSchema = z.object({
 export const analyzeEmailResponseSchema = z.object({
   analysisId: z.uuid(),
   emailId: z.uuid(),
-  status: z.literal("completed"),
+  status: z.enum(["completed", "read_only"]),
   category: z.string(),
+  priority: z.enum(["low", "normal", "high"]),
   summary: z.string(),
   summaryEn: z.string().nullable(),
   summaryZh: z.string().nullable(),
@@ -119,6 +120,13 @@ export const analyzeEmailResponseSchema = z.object({
   workflowRunId: z.string(),
   elapsedTime: z.number().nullable(),
   totalTokens: z.number().int().nonnegative().nullable(),
+  validationMode: z.enum([
+    "strict",
+    "schema_repair",
+    "strong_model_repair",
+    "read_only_fallback",
+  ]),
+  readOnly: z.boolean(),
 });
 
 export const translateEmailResponseSchema = z.object({

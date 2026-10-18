@@ -149,3 +149,18 @@ Every definition declares an input schema, output schema, prompt version,
 allowed tools, retry budget, and failure strategy. Run `pytest
 tests/test_skills.py` to exercise every skill independently without calling
 Dify or spending model tokens.
+
+## Structured output safety
+
+The Dify `analysis` output must follow `dify/email-analysis.schema.json`.
+FastAPI validates it again with Pydantic, including enum values, required
+evidence, confidence in the `0..1` range, timezone-aware dates, valid IANA
+timezones, and matching email IDs. The validation path is recorded as
+`strict`, `schema_repair`, `strong_model_repair`, or `read_only_fallback`.
+
+Local deterministic repair normalizes legacy field names and drops unsafe
+actions or dates. Only when that fails does FastAPI call the separately
+published strong-model repair workflow through `DIFY_REPAIR_API_KEY`. If that
+also fails, the API returns a summary-only read-only result; it creates no
+calendar drafts. The frontend consumes the validated API object and never
+parses model prose.

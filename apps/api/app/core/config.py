@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     dify_base_url: str = "https://api.dify.ai/v1"
     dify_api_key: str = ""
     dify_translate_api_key: str = ""
+    dify_repair_api_key: str = ""
     dify_mock_mode: bool = True
     dify_max_input_chars: int = 8000
     dify_app_id: str = "f18db7c0-9734-4d64-a0c4-110293778873"
     dify_translate_app_id: str = "4fac3a25-a296-4e40-9007-b6e66236be15"
+    dify_repair_app_id: str = "4648d178-cda3-4b24-851b-c9274a53a239"
     dify_fast_model: str = "gpt-5-mini"
     dify_strong_model: str = "gpt-5"
     dify_embedding_model: str = "text-embedding-3-small"
