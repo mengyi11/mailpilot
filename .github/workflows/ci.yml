@@ -1,0 +1,29 @@
+name: MailPilot CI
+on:
+  push:
+  pull_request:
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r apps/api/requirements.txt
+      - run: python -m compileall -q app && pytest -q
+        working-directory: apps/api
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci && npm run lint && npm run build
+        working-directory: apps/web
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config
+      - run: docker build -t mailpilot-api ./apps/api
+      - run: docker build -t mailpilot-web ./apps/web

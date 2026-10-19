@@ -1,6 +1,41 @@
 # mailpilot
 AI Email-to-Action Agent powered by Dify, FastAPI and Next.js
 
+## One-command local stack
+
+Copy `apps/api/.env.example` to `apps/api/.env`, then start the complete
+production-shaped stack (Next.js, FastAPI, PostgreSQL/pgvector, Redis and the
+worker):
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). FastAPI is available at
+[http://localhost:8000/docs](http://localhost:8000/docs). The API container
+runs `alembic upgrade head` before starting, and PostgreSQL data is persisted
+in the `mailpilot_postgres_data` volume. Stop the stack with
+`docker compose down`; add `-v` only when you intentionally want to delete
+the local database volume.
+
+## Deployment shape
+
+The same images can be deployed as a web service and API/worker services on
+Railway or Render. The recommended portfolio setup is Vercel for `apps/web`,
+Railway/Render for FastAPI and worker, and Supabase PostgreSQL with the
+`vector` extension. Set `DATABASE_URL`, OAuth credentials, Dify keys and
+`CORS_ORIGINS` as platform secrets; never put them in `NEXT_PUBLIC_*` values.
+Production Google OAuth must use the exact HTTPS callback URL configured in
+Google Cloud. A deployment checklist and CI smoke checks live in
+`docs/deployment.md`.
+
+## Quality and portfolio evidence
+
+GitHub Actions runs API tests, web lint/build and Docker builds on every push.
+The `evals/` directory contains the 20-case benchmark and reproducible report.
+For a three-minute demo, show: Gmail sync, bilingual summary, calendar
+approval, AI search with citations, and Agent Trace cost/latency inspection.
+
 ## Local database
 
 Start PostgreSQL:

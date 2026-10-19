@@ -18,5 +18,56 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: mailpilot-redis
+    restart: unless-stopped
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    container_name: mailpilot-api
+    env_file:
+      - path: ./apps/api/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://mailpilot:mailpilot_dev@postgres:5432/mailpilot
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build: ./apps/api
+    container_name: mailpilot-worker
+    command: ["python", "worker.py"]
+    env_file:
+      - path: ./apps/api/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://mailpilot:mailpilot_dev@postgres:5432/mailpilot
+    depends_on:
+      redis: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    container_name: mailpilot-web
+    ports: ["3000:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+
 volumes:
   mailpilot_postgres_data:
