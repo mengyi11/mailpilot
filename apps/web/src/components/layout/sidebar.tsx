@@ -9,17 +9,19 @@ import {
   Settings,
   Sparkles,
   Trash2,
+  Activity,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type NavigationId = "inbox" | "ai" | "calendar" | "settings";
+export type NavigationId = "inbox" | "ai" | "calendar" | "traces" | "settings";
 
 const navigation = [
   { id: "inbox", label: "收件箱", icon: Inbox },
   { id: "ai", label: "AI 处理", icon: Sparkles },
   { id: "calendar", label: "日历候选", icon: CalendarDays },
+  { id: "traces", label: "Agent Trace", icon: Activity },
   { id: "settings", label: "设置", icon: Settings },
 ] satisfies { id: NavigationId; label: string; icon: typeof Inbox }[];
 

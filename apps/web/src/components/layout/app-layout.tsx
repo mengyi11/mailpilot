@@ -11,6 +11,7 @@ import { GlobalSearchProvider } from "@/components/search/global-search-context"
 import { AiSearchPage } from "@/components/search/ai-search-page";
 import { MemorySettingsPage } from "@/components/settings/memory-settings-page";
 import { CalendarPage } from "@/components/calendar/calendar-page";
+import { AgentTracePage } from "@/components/traces/agent-trace-page";
 
 function LoggedOutPage({ onSignIn }: { onSignIn: () => void }) {
   return (
@@ -63,6 +64,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             {activePage === "inbox" ? children : null}
             {activePage === "ai" ? <AiSearchPage /> : null}
             {activePage === "calendar" ? <CalendarPage /> : null}
+            {activePage === "traces" ? <AgentTracePage /> : null}
             {activePage === "settings" ? <MemorySettingsPage /> : null}
           </main>
         </div>

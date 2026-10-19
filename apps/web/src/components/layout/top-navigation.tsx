@@ -11,6 +11,7 @@ const pageTitles: Record<NavigationId, string> = {
   inbox: "早上好，Mengyi",
   ai: "AI 处理中心",
   calendar: "日历候选",
+  traces: "Agent Trace",
   settings: "工作区设置",
 };
 

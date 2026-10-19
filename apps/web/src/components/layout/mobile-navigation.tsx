@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Inbox, Settings, Sparkles } from "lucide-react";
+import { Activity, CalendarDays, Inbox, Settings, Sparkles } from "lucide-react";
 
 import type { NavigationId } from "@/components/layout/sidebar";
 
@@ -8,6 +8,7 @@ const items = [
   { id: "inbox", label: "收件箱", icon: Inbox },
   { id: "ai", label: "AI处理", icon: Sparkles },
   { id: "calendar", label: "日历", icon: CalendarDays },
+  { id: "traces", label: "Trace", icon: Activity },
   { id: "settings", label: "设置", icon: Settings },
 ] satisfies { id: NavigationId; label: string; icon: typeof Inbox }[];
 
@@ -21,7 +22,7 @@ export function MobileNavigation({
   return (
     <nav
       aria-label="移动端主导航"
-      className="border-sidebar-border bg-sidebar/95 fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+      className="border-sidebar-border bg-sidebar/95 fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
     >
       {items.map(({ id, label, icon: Icon }) => (
         <button
