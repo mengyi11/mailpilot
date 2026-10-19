@@ -53,6 +53,7 @@ export type CalendarDraft = {
   timezone: string;
   location: string | null;
   evidence: string;
+  status?: "pending_approval" | "confirmed" | "rejected";
 };
 
 export type ReplyDraft = {

@@ -5,11 +5,15 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "system";
 
 function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("dark", theme === "dark");
-  document.documentElement.style.colorScheme = theme;
+  const dark =
+    theme === "dark" ||
+    (theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
 }
 
 export function ThemeToggle() {
@@ -18,20 +22,29 @@ export function ThemeToggle() {
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("mailpilot-theme");
     const preferredTheme: Theme =
-      savedTheme === "dark" || savedTheme === "light"
+      savedTheme === "dark" || savedTheme === "light" || savedTheme === "system"
         ? savedTheme
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+        : "system";
 
     applyTheme(preferredTheme);
     const frame = window.requestAnimationFrame(() => setTheme(preferredTheme));
 
-    return () => window.cancelAnimationFrame(frame);
+    const syncTheme = (event: Event) => {
+      const nextTheme = (event as CustomEvent<Theme>).detail;
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    };
+    window.addEventListener("mailpilot-theme-change", syncTheme);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("mailpilot-theme-change", syncTheme);
+    };
   }, []);
 
   function toggleTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
+    const nextTheme: Theme = document.documentElement.classList.contains("dark")
+      ? "light"
+      : "dark";
     setTheme(nextTheme);
     applyTheme(nextTheme);
     window.localStorage.setItem("mailpilot-theme", nextTheme);
@@ -42,7 +55,7 @@ export function ThemeToggle() {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      aria-label={theme === "light" ? "切换到深色主题" : "切换到浅色主题"}
+      aria-label={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
     >
       {theme === "light" ? (
         <Moon aria-hidden="true" />

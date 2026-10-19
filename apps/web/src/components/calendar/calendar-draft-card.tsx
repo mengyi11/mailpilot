@@ -1,16 +1,13 @@
 "use client";
 
-import {
-  CalendarCheck,
-  Check,
-  Clock3,
-  MapPin,
-  RotateCcw,
-  X,
-} from "lucide-react";
+import { CalendarCheck, Check, Clock3, MapPin, X } from "lucide-react";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { CalendarApprovalDialog } from "@/components/calendar/calendar-approval-dialog";
+import { apiRequest, ApiError } from "@/lib/api-client";
+import { calendarEventSchema, type CalendarEvent } from "@/lib/calendar-schema";
 import type { CalendarDraft } from "@/types/email";
 
 function formatDate(value: string) {
@@ -31,10 +28,65 @@ const statusLabels: Record<DraftStatus, string> = {
 };
 
 export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
-  const [statuses, setStatuses] = useState<Record<string, DraftStatus>>({});
+  const queryClient = useQueryClient();
+  const [approvalCandidate, setApprovalCandidate] =
+    useState<CalendarEvent | null>(null);
+  const [statuses, setStatuses] = useState<Record<string, DraftStatus>>(() =>
+    Object.fromEntries(
+      drafts.map((draft) => [
+        draft.id,
+        draft.status === "confirmed"
+          ? "approved"
+          : draft.status === "rejected"
+            ? "rejected"
+            : "pending",
+      ]),
+    ),
+  );
+  const approve = useMutation({
+    mutationFn: (event: CalendarEvent) =>
+      apiRequest(`/calendar/candidates/${event.id}/approve`, {
+        method: "POST",
+        body: JSON.stringify({
+          approvalId: event.approvalId,
+          payloadHash: event.approvalPayloadHash,
+        }),
+        schema: calendarEventSchema,
+      }),
+    onSuccess: (_data, variables) => {
+      setStatuses((current) => ({
+        ...current,
+        [variables.id]: "approved",
+      }));
+      setApprovalCandidate(null);
+      queryClient.invalidateQueries({ queryKey: ["calendar-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
+    },
+  });
+  const reject = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest(`/calendar/candidates/${id}/reject`, {
+        method: "POST",
+        schema: calendarEventSchema,
+      }),
+    onSuccess: (_data, id) => {
+      setStatuses((current) => ({ ...current, [id]: "rejected" }));
+      queryClient.invalidateQueries({ queryKey: ["calendar-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
+    },
+  });
+  const loadApproval = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest(`/calendar/candidates/${id}`, {
+        schema: calendarEventSchema,
+      }),
+    onSuccess: setApprovalCandidate,
+  });
 
   function updateStatus(id: string, status: DraftStatus) {
-    setStatuses((current) => ({ ...current, [id]: status }));
+    if (status === "pending") return;
+    if (status === "approved") loadApproval.mutate(id);
+    else reject.mutate(id);
   }
 
   return (
@@ -59,7 +111,13 @@ export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
       {drafts.length ? (
         <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3">
           {drafts.map((draft) => {
-            const status = statuses[draft.id] ?? "pending";
+            const status =
+              statuses[draft.id] ??
+              (draft.status === "confirmed"
+                ? "approved"
+                : draft.status === "rejected"
+                  ? "rejected"
+                  : "pending");
 
             return (
               <article
@@ -105,6 +163,7 @@ export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
                         variant="ghost"
                         size="icon-xs"
                         onClick={() => updateStatus(draft.id, "rejected")}
+                        disabled={reject.isPending || loadApproval.isPending}
                         aria-label={`忽略${draft.title}`}
                         title="忽略"
                       >
@@ -115,6 +174,7 @@ export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
                         size="icon-xs"
                         className="text-primary hover:bg-primary/10 hover:text-primary"
                         onClick={() => updateStatus(draft.id, "approved")}
+                        disabled={reject.isPending || loadApproval.isPending}
                         aria-label={`确认${draft.title}`}
                         title="确认"
                       >
@@ -122,15 +182,9 @@ export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => updateStatus(draft.id, "pending")}
-                      aria-label={`撤销${draft.title}的选择`}
-                      title="撤销"
-                    >
-                      <RotateCcw aria-hidden="true" />
-                    </Button>
+                    <span className="text-muted-foreground px-1 text-[9px]">
+                      已处理
+                    </span>
                   )}
                 </div>
               </article>
@@ -147,6 +201,23 @@ export function CalendarDraftCard({ drafts }: { drafts: CalendarDraft[] }) {
           <p className="mt-1 text-[10px]">这封邮件暂未提取到明确日期。</p>
         </div>
       )}
+      {approvalCandidate ? (
+        <CalendarApprovalDialog
+          event={approvalCandidate}
+          busy={approve.isPending}
+          error={
+            approve.error instanceof ApiError
+              ? approve.error.message
+              : approve.isError
+                ? "创建失败，请稍后重试。"
+                : undefined
+          }
+          onClose={() => {
+            if (!approve.isPending) setApprovalCandidate(null);
+          }}
+          onConfirm={() => approve.mutate(approvalCandidate)}
+        />
+      ) : null}
     </section>
   );
 }

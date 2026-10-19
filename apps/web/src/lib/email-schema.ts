@@ -60,6 +60,7 @@ export const emailDetailSchema = z.object({
       timezone: z.string(),
       location: z.string().nullable(),
       evidence: z.string(),
+      status: z.enum(["pending_approval", "confirmed", "rejected"]).optional(),
     }),
   ),
   replyDraft: z.object({
