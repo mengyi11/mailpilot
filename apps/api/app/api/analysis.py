@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from time import perf_counter
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -39,6 +40,7 @@ from app.services.schema_repair import (
     safe_read_only_analysis,
 )
 from app.services.memory import get_user_preferences_tool
+from app.services.trace import estimate_cost, estimate_tokens, redact
 
 
 router = APIRouter(prefix="/emails", tags=["email-analysis"])
@@ -287,6 +289,7 @@ async def analyze_email(
     language = str(email.processing_metadata.get("detected_language") or "unknown")
     sent_at = email.sent_at or email.received_at
     started_at = datetime.now(UTC)
+    started_clock = perf_counter()
 
     # Session Memory is an auditable trace, not conversational text sent to the LLM.
     run = AgentRun(
@@ -294,9 +297,12 @@ async def analyze_email(
         email_id=email.id,
         workflow_name="email_analysis",
         workflow_version="v1",
+        prompt_version="email-analysis-v1",
+        user_goal="分析邮件并提取可验证的摘要、行动项和日期",
         status="running",
         trace_id=uuid4().hex,
         input_data={"email_id": str(email.id), "language": language},
+        token_budget=get_settings().agent_token_budget,
         started_at=started_at,
     )
     db.add(run)
@@ -338,6 +344,7 @@ async def analyze_email(
         status="running",
         input_data={"email_id": str(email.id)},
         started_at=datetime.now(UTC),
+        prompt_version="email-analysis-v1",
     )
     db.add(workflow_step)
     db.flush()
@@ -406,10 +413,24 @@ async def analyze_email(
     )
 
     workflow_step.status = "completed"
+    settings = get_settings()
+    input_tokens = estimate_tokens((email.subject or "") + " " + _sender_text(email.sender) + " " + cleaned_body)
+    output_tokens = max(estimate_tokens(result.summary), 1)
+    workflow_total_tokens = workflow.data.total_tokens or (input_tokens + output_tokens)
+    budget_exceeded = bool((workflow.data.total_steps or 0) > settings.agent_max_steps or workflow_total_tokens > settings.agent_token_budget)
+    read_only = read_only or budget_exceeded
+    duration_ms = round((perf_counter() - started_clock) * 1000)
+    workflow_step.model_name = analysis_model = settings.dify_fast_model
+    workflow_step.input_tokens = input_tokens
+    workflow_step.output_tokens = output_tokens
+    workflow_step.cost_usd = estimate_cost(analysis_model, input_tokens, output_tokens, settings)
+    workflow_step.duration_ms = duration_ms
     workflow_step.output_data = {
         "workflow_run_id": workflow.workflow_run_id,
         "validation_mode": validation_mode,
         "read_only": read_only,
+        "token_source": "provider" if workflow.data.total_tokens else "estimate",
+        "budget_exceeded": budget_exceeded,
     }
     workflow_step.completed_at = datetime.now(UTC)
 
@@ -503,7 +524,11 @@ async def analyze_email(
         "calendar_candidates": len(drafts),
     }
     run.model_name = analysis.model_name
-    run.output_tokens = workflow.data.total_tokens
+    run.input_tokens = input_tokens
+    run.output_tokens = output_tokens
+    run.cost_usd = estimate_cost(run.model_name, input_tokens, output_tokens, settings)
+    run.duration_ms = round((perf_counter() - started_clock) * 1000)
+    run.output_data["budget_exceeded"] = budget_exceeded
     run.completed_at = completed_at
 
     db.commit()

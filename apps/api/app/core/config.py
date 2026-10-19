@@ -72,6 +72,12 @@ class Settings(BaseSettings):
         "calendar:write",
     ]
     tool_timeout_seconds: float = 15.0
+    agent_max_steps: int = 12
+    agent_token_budget: int = 12000
+    fast_model_input_cost_per_million: float = 0.25
+    fast_model_output_cost_per_million: float = 2.0
+    strong_model_input_cost_per_million: float = 1.25
+    strong_model_output_cost_per_million: float = 10.0
 
 
 @lru_cache
