@@ -128,8 +128,8 @@ export function EmailDetail({
 
   return (
     <>
-      <article className="bg-card text-card-foreground flex h-full min-h-0 flex-col overflow-hidden">
-        <header className="border-border shrink-0 border-b p-4 md:px-5 md:py-4">
+      <article className="bg-card text-card-foreground relative flex h-full min-h-0 flex-col overflow-hidden">
+        <header className="border-border bg-secondary/55 shrink-0 border-b p-4 transition-none md:px-5 md:py-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2">
@@ -146,14 +146,16 @@ export function EmailDetail({
                 {email.subject}
               </h2>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setReplyOpen(true)}
-            >
-              <Reply data-icon="inline-start" aria-hidden="true" />
-              回复
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReplyOpen(true)}
+              >
+                <Reply data-icon="inline-start" aria-hidden="true" />
+                回复
+              </Button>
+            </div>
           </div>
 
           <div className="mt-3 flex items-start gap-3">

@@ -29,8 +29,10 @@ export function EmailListItem({
       onClick={() => onSelect(email.id)}
       aria-pressed={selected}
       className={cn(
-        "border-border w-full border-b px-3 py-3 text-left transition-colors last:border-b-0",
-        selected ? "bg-primary/10" : "bg-card hover:bg-muted/60",
+        "border-border text-card-foreground w-full border-b px-3 py-3 text-left transition-none last:border-b-0",
+        selected
+          ? "bg-muted/75 shadow-[inset_3px_0_0_var(--primary)]"
+          : "bg-card hover:bg-muted/70",
       )}
     >
       <div className="flex items-start gap-3">
@@ -52,7 +54,7 @@ export function EmailListItem({
               className={cn(
                 "truncate text-sm",
                 email.isRead
-                  ? "text-foreground/75 font-medium"
+                  ? "text-foreground/70 font-medium"
                   : "font-semibold",
               )}
             >

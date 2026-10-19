@@ -69,7 +69,7 @@ export function Sidebar({
               "flex w-full items-center rounded-lg py-2 text-sm font-medium transition-colors",
               collapsed ? "justify-center px-2" : "gap-3 px-3",
               activePage === id
-                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--sidebar-primary)]"
                 : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >

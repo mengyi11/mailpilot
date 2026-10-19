@@ -21,8 +21,8 @@ export function EmailList({
   syncMessage,
 }: EmailListProps) {
   return (
-    <section className="border-border bg-card text-card-foreground flex h-full min-h-0 flex-col overflow-hidden border-r">
-      <div className="border-border flex h-16 shrink-0 items-center justify-between border-b px-4">
+    <section className="border-border bg-card text-card-foreground flex h-full min-h-0 flex-col overflow-hidden border-r transition-none">
+      <div className="border-border bg-secondary flex h-16 shrink-0 items-center justify-between border-b px-4 transition-none">
         <div>
           <h2 className="font-semibold tracking-tight">收件箱</h2>
           <p className="text-muted-foreground mt-0.5 max-w-52 truncate text-[11px]">
@@ -34,7 +34,7 @@ export function EmailList({
             type="button"
             onClick={onSync}
             disabled={isSyncing}
-            className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-lg disabled:opacity-50"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-8 items-center justify-center rounded-lg disabled:opacity-50"
             aria-label="同步 Gmail"
             title="同步 Gmail"
           >
@@ -45,7 +45,7 @@ export function EmailList({
           </button>
           <button
             type="button"
-            className="text-muted-foreground hover:bg-muted flex size-8 items-center justify-center rounded-lg"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-8 items-center justify-center rounded-lg"
             aria-label="筛选邮件"
           >
             <ListFilter className="size-4" aria-hidden="true" />
