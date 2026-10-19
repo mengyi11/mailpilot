@@ -8,6 +8,8 @@ import { MobileNavigation } from "@/components/layout/mobile-navigation";
 import { Sidebar, type NavigationId } from "@/components/layout/sidebar";
 import { TopNavigation } from "@/components/layout/top-navigation";
 import { Button } from "@/components/ui/button";
+import { GlobalSearchProvider } from "@/components/search/global-search-context";
+import { AiSearchPage } from "@/components/search/ai-search-page";
 
 const pageContent = {
   ai: {
@@ -78,7 +80,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
+    <GlobalSearchProvider>
+      <div className="bg-background text-foreground min-h-screen">
       <TopNavigation
         activePage={activePage}
         collapsed={collapsed}
@@ -96,14 +99,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
         }`}
       >
         <main>
-          {activePage === "inbox" ? (
-            children
-          ) : (
+          {activePage === "inbox" ? children : null}
+          {activePage === "ai" ? <AiSearchPage /> : null}
+          {activePage === "calendar" || activePage === "settings" ? (
             <EmptyProductPage page={activePage} />
-          )}
+          ) : null}
         </main>
       </div>
       <MobileNavigation activePage={activePage} onNavigate={setActivePage} />
-    </div>
+      </div>
+    </GlobalSearchProvider>
   );
 }

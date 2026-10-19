@@ -83,6 +83,7 @@ export const gmailSyncResultSchema = z.object({
   failed: z.number().int().nonnegative(),
   mode: z.enum(["full", "incremental"]),
   historyId: z.string().nullable(),
+  ragIndexed: z.number().int().nonnegative().default(0),
 });
 
 export const analyzeEmailResponseSchema = z.object({
@@ -148,7 +149,30 @@ export const translateEmailResponseSchema = z.object({
   totalTokens: z.number().int().nullable(),
 });
 
+export const ragSearchResponseSchema = z.object({
+  answer: z.string(),
+  answer_mode: z.string(),
+  answer_context: z.string(),
+  citations: z.array(
+    z.object({
+      citation_id: z.string(),
+      chunk_id: z.uuid(),
+      email_id: z.uuid(),
+      thread_id: z.uuid().nullable(),
+      subject: z.string(),
+      sender: z.string(),
+      sent_at: z.iso.datetime({ offset: true }),
+      excerpt: z.string(),
+      similarity: z.number().min(0).max(1),
+    }),
+  ),
+  result_count: z.number().int().nonnegative(),
+  no_results: z.boolean(),
+  message: z.string().nullable().optional(),
+});
+
 export type AnalyzeEmailResponse = z.infer<typeof analyzeEmailResponseSchema>;
 export type TranslateEmailResponse = z.infer<
   typeof translateEmailResponseSchema
 >;
+export type RagSearchResponse = z.infer<typeof ragSearchResponseSchema>;

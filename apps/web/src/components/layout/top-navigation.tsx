@@ -1,8 +1,11 @@
-import { Bell, Mail, Menu, Search, Sparkles } from "lucide-react";
+"use client";
+
+import { Bell, Mail, Menu, Search, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { NavigationId } from "@/components/layout/sidebar";
+import { useGlobalSearch } from "@/components/search/global-search-context";
 
 const pageTitles: Record<NavigationId, string> = {
   inbox: "早上好，Mengyi",
@@ -20,8 +23,10 @@ export function TopNavigation({
   collapsed: boolean;
   onToggleSidebar: () => void;
 }) {
+  const globalSearch = useGlobalSearch();
+
   return (
-    <header className="border-border bg-card fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b px-3 shadow-sm">
+    <header className="border-border bg-card fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b px-3 shadow-sm transition-none">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Button
           variant="ghost"
@@ -42,15 +47,34 @@ export function TopNavigation({
           </div>
         </div>
 
-        <label className="bg-muted mx-auto hidden h-9 max-w-xl flex-1 items-center gap-2 rounded-lg px-3 md:flex">
-          <Search className="text-muted-foreground size-4" aria-hidden="true" />
-          <span className="sr-only">搜索邮件</span>
+        <form
+          onSubmit={(event) => event.preventDefault()}
+          className="border-border/70 bg-muted/70 focus-within:border-primary/45 focus-within:bg-background focus-within:ring-primary/15 hidden h-10 w-full max-w-lg items-center gap-2 rounded-xl border px-3 shadow-inner transition-all focus-within:ring-3 md:flex"
+          role="search"
+        >
+          <Search className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+          <label className="sr-only" htmlFor="mail-search">
+            搜索邮件
+          </label>
           <input
+            id="mail-search"
             type="search"
-            placeholder="搜索邮件、联系人或主题"
+            value={globalSearch.mailQuery}
+            onChange={(event) => globalSearch.setMailQuery(event.target.value)}
+            placeholder="搜索发件人、主题或邮件内容"
             className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
           />
-        </label>
+          {globalSearch.mailQuery ? (
+            <button
+              type="button"
+              onClick={() => globalSearch.setMailQuery("")}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="清除搜索"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          ) : null}
+        </form>
 
         <div className="ml-auto flex items-center gap-1.5">
           <span className="text-muted-foreground hidden text-xs xl:block">

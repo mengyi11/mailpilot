@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { EmailDetail } from "@/components/mail/email-detail";
 import { EmailList } from "@/components/mail/email-list";
+import { useGlobalSearch } from "@/components/search/global-search-context";
 import {
   InboxEmptyState,
   InboxErrorState,
@@ -46,6 +47,7 @@ function translateEmail(emailId: string) {
 
 export function InboxPage() {
   const queryClient = useQueryClient();
+  const globalSearch = useGlobalSearch();
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const {
     data: emails = [],
@@ -75,8 +77,20 @@ export function InboxPage() {
       await queryClient.invalidateQueries({ queryKey: ["gmail-emails"] });
     },
   });
+  const normalizedQuery = globalSearch.mailQuery.trim().toLocaleLowerCase();
+  const visibleEmails = normalizedQuery
+    ? emails.filter((email) =>
+        [
+          email.sender.name,
+          email.sender.email,
+          email.subject,
+          email.preview,
+        ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery)),
+      )
+    : emails;
   const selectedEmail =
-    emails.find((email) => email.id === selectedEmailId) ?? emails[0];
+    visibleEmails.find((email) => email.id === selectedEmailId) ??
+    visibleEmails[0];
   const syncMessage = syncMutation.isPending
     ? "正在同步 Gmail…"
     : syncMutation.isError
@@ -84,7 +98,7 @@ export function InboxPage() {
       : syncMutation.data
         ? syncMutation.data.fetched === 0
           ? "已是最新状态"
-          : `同步完成：新增 ${syncMutation.data.created}，更新 ${syncMutation.data.updated}`
+          : `同步完成：新增 ${syncMutation.data.created}，更新 ${syncMutation.data.updated}，索引 ${syncMutation.data.ragIndexed}`
         : null;
 
   return (
@@ -107,7 +121,7 @@ export function InboxPage() {
       ) : (
         <div className="grid h-full lg:grid-cols-[340px_minmax(0,1fr)] 2xl:grid-cols-[370px_minmax(0,1fr)]">
           <EmailList
-            emails={emails}
+            emails={visibleEmails}
             selectedEmailId={selectedEmailId}
             onSelectEmail={setSelectedEmailId}
             onSync={() => syncMutation.mutate()}
