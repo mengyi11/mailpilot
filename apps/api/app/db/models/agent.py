@@ -114,10 +114,15 @@ class Approval(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     proposed_payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, default=dict, nullable=False
     )
+    payload_hash: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(
         String(32), default="pending", nullable=False
     )
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verification_result: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
     decision_note: Mapped[str | None] = mapped_column(Text)

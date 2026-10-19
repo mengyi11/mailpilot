@@ -157,6 +157,11 @@ def repair_analysis_payload(
                 "timezone": timezone,
                 "location": item.get("location"),
                 "description": item.get("description"),
+                "attendees": [
+                    str(value).strip()
+                    for value in (item.get("attendees") or [])
+                    if str(value).strip()
+                ][:50],
                 "evidence": evidence,
                 "confidence": confidence,
             }

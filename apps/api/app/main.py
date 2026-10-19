@@ -12,6 +12,9 @@ from app.api.google_auth import router as google_auth_router
 from app.api.gmail import router as gmail_router
 from app.api.translation import router as translation_router
 from app.api.rag import router as rag_router
+from app.api.memory import router as memory_router
+from app.api.tools import router as tools_router
+from app.api.calendar import router as calendar_router
 from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.logging import configure_logging
@@ -57,6 +60,9 @@ def create_app() -> FastAPI:
     application.include_router(gmail_router)
     application.include_router(translation_router)
     application.include_router(rag_router)
+    application.include_router(memory_router)
+    application.include_router(tools_router)
+    application.include_router(calendar_router)
 
     @application.middleware("http")
     async def request_context(request: Request, call_next):

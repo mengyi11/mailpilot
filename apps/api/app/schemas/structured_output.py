@@ -69,6 +69,7 @@ class ExtractedDate(StructuredModel):
     timezone: str = Field(min_length=1, max_length=64)
     location: str | None = Field(default=None, max_length=500)
     description: str | None = Field(default=None, max_length=2000)
+    attendees: list[str] = Field(default_factory=list, max_length=50)
     evidence: Evidence
     confidence: float = Field(ge=0, le=1)
 
@@ -111,6 +112,7 @@ class CalendarDraft(StructuredModel):
     ends_at: datetime | None = None
     timezone: str
     location: str | None = None
+    attendees: list[str] = Field(default_factory=list, max_length=50)
     evidence: Evidence
     confidence: float = Field(ge=0, le=1)
     status: Literal["pending_approval"] = "pending_approval"
@@ -123,6 +125,7 @@ class CalendarDraft(StructuredModel):
             end=self.ends_at,
             timezone=self.timezone,
             location=self.location,
+            attendees=self.attendees,
             evidence=self.evidence,
             confidence=self.confidence,
         )

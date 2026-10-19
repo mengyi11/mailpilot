@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 from datetime import datetime
 from typing import Any, Literal
 
@@ -109,19 +110,28 @@ class DifyClient:
 
         owns_client = self._http_client is None
         client = self._http_client or httpx.AsyncClient(timeout=60.0)
+        response = None
+        last_error: Exception | None = None
         try:
-            response = await client.post(
-                f"{self.settings.dify_base_url.rstrip('/')}/workflows/run",
-                headers=headers,
-                json=payload,
-            )
-        except httpx.TimeoutException as exc:
-            raise DifyAPIError("Dify workflow timed out") from exc
-        except httpx.HTTPError as exc:
-            raise DifyAPIError("Could not reach Dify") from exc
+            for attempt in range(max(1, self.settings.dify_max_retries)):
+                try:
+                    response = await client.post(
+                        f"{self.settings.dify_base_url.rstrip('/')}/workflows/run",
+                        headers=headers,
+                        json=payload,
+                    )
+                    if response.status_code not in {429, 500, 502, 503, 504}:
+                        break
+                except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                    last_error = exc
+                if attempt + 1 < max(1, self.settings.dify_max_retries):
+                    await asyncio.sleep(0.25 * (2**attempt))
         finally:
             if owns_client:
                 await client.aclose()
+
+        if response is None:
+            raise DifyAPIError("Dify workflow timed out or could not be reached") from last_error
 
         if response.is_error:
             request_id = response.headers.get("x-request-id", "unknown")

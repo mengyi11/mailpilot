@@ -70,6 +70,7 @@ class CalendarCandidate(SkillModel):
     end: datetime | None = None
     timezone: str = Field(min_length=1)
     location: str | None = None
+    attendees: list[str] = Field(default_factory=list, max_length=50)
     evidence: str = Field(min_length=1)
     confidence: float = Field(ge=0, le=1)
     requires_approval: Literal[True] = True

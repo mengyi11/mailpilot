@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str = ""
     google_oauth_redirect_uri: str = "http://localhost:8000/auth/google/callback"
     google_oauth_scopes: list[str] = [
-        "https://www.googleapis.com/auth/gmail.readonly"
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/calendar.events.freebusy",
     ]
     oauth_state_secret: str = ""
     oauth_state_max_age_seconds: int = 600
@@ -42,6 +44,7 @@ class Settings(BaseSettings):
     dify_rag_api_key: str = ""
     dify_mock_mode: bool = True
     dify_max_input_chars: int = 8000
+    dify_max_retries: int = 3
     dify_app_id: str = "f18db7c0-9734-4d64-a0c4-110293778873"
     dify_translate_app_id: str = "4fac3a25-a296-4e40-9007-b6e66236be15"
     dify_repair_app_id: str = "4648d178-cda3-4b24-851b-c9274a53a239"
@@ -58,6 +61,17 @@ class Settings(BaseSettings):
     rag_min_similarity: float = 0.30
     rag_tool_api_key: str = ""
     rag_answer_max_context_chars: int = 6000
+    memory_tool_api_key: str = ""
+    dify_tool_api_key: str = ""
+    dify_tool_permissions: list[str] = [
+        "email:read",
+        "preferences:read",
+        "task:write",
+        "draft:write",
+        "calendar:read",
+        "calendar:write",
+    ]
+    tool_timeout_seconds: float = 15.0
 
 
 @lru_cache
