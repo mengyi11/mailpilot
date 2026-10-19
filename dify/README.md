@@ -44,3 +44,22 @@ The workflow/agent must follow this contract:
 Dify Cloud cannot call `localhost`. The tool can be imported now, but end-to-end
 cloud execution requires the FastAPI service to be deployed on HTTPS (or exposed
 temporarily through an authenticated development tunnel).
+
+## Unified Tool Registry
+
+Import [`tool-registry.openapi.yaml`](./tool-registry.openapi.yaml) after replacing
+its server URL with the deployed FastAPI HTTPS URL. Store the same secret in
+Dify's encrypted `X-Tool-Api-Key` credential and FastAPI's
+`DIFY_TOOL_API_KEY`; never pass it as a workflow variable or prompt text.
+
+The registry exposes `get_email`, `get_email_thread`, `search_emails`,
+`retrieve_related_emails`, `get_user_preferences`, `create_task`, and
+`create_reply_draft` as separate Dify operations. Every call requires a stable
+`idempotencyKey`. FastAPI checks the configured permission, scopes email queries
+to `userId`, applies a timeout, writes an `agent_runs` and `tool_calls` audit
+record, and returns a structured `ToolResult`. A repeated successful key returns
+the cached result instead of repeating a write.
+
+`create_reply_draft` only saves a reviewable draft; it never sends an email.
+Treat `ok=false` as a Tool failure and use `error.retryable` to decide whether
+the workflow may retry.

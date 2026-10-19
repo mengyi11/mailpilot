@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: MailPilot Tool Registry
+  version: 1.0.0
+  description: User-scoped, idempotent MailPilot capabilities for Dify.
+servers:
+  - url: https://YOUR-MAILPILOT-API.example.com
+security:
+  - ToolKey: []
+paths:
+  /tools/get_email:
+    post:
+      operationId: get_email
+      summary: Read one owned email
+      requestBody: {$ref: '#/components/requestBodies/EmailRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/get_email_thread:
+    post:
+      operationId: get_email_thread
+      summary: Read one owned email thread
+      requestBody: {$ref: '#/components/requestBodies/ThreadRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/search_emails:
+    post:
+      operationId: search_emails
+      summary: Search owned emails
+      requestBody: {$ref: '#/components/requestBodies/SearchRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/retrieve_related_emails:
+    post:
+      operationId: retrieve_related_emails
+      summary: Retrieve related email evidence and citations
+      requestBody: {$ref: '#/components/requestBodies/RelatedRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/get_user_preferences:
+    post:
+      operationId: get_user_preferences
+      summary: Read explicit user preferences
+      requestBody: {$ref: '#/components/requestBodies/PreferencesRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/create_task:
+    post:
+      operationId: create_task
+      summary: Create a MailPilot task
+      requestBody: {$ref: '#/components/requestBodies/TaskRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/create_reply_draft:
+    post:
+      operationId: create_reply_draft
+      summary: Create a reviewable reply draft without sending
+      requestBody: {$ref: '#/components/requestBodies/DraftRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/check_calendar_availability:
+    post:
+      operationId: check_calendar_availability
+      summary: Check the user's real Google Calendar availability
+      requestBody: {$ref: '#/components/requestBodies/CalendarWindowRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/create_calendar_draft:
+    post:
+      operationId: create_calendar_draft
+      summary: Create an evidence-backed draft that requires approval
+      requestBody: {$ref: '#/components/requestBodies/CalendarDraftRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/create_calendar_event:
+    post:
+      operationId: create_calendar_event
+      summary: Execute one approved calendar draft
+      requestBody: {$ref: '#/components/requestBodies/CalendarApprovalRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+  /tools/get_calendar_event:
+    post:
+      operationId: get_calendar_event
+      summary: Read and verify a created Google Calendar event
+      requestBody: {$ref: '#/components/requestBodies/GetCalendarEventRequest'}
+      responses: {'200': {$ref: '#/components/responses/ToolResult'}}
+components:
+  securitySchemes:
+    ToolKey:
+      type: apiKey
+      in: header
+      name: X-Tool-Api-Key
+  schemas:
+    Envelope:
+      type: object
+      required: [userId, arguments, idempotencyKey]
+      properties:
+        userId: {type: string, format: uuid}
+        arguments: {type: object}
+        idempotencyKey: {type: string, minLength: 8}
+        traceId: {type: string}
+    ToolResult:
+      type: object
+      required: [ok, tool, cached, traceId, durationMs]
+      properties:
+        ok: {type: boolean}
+        tool: {type: string}
+        data: {type: object, nullable: true}
+        error: {type: object, nullable: true}
+        cached: {type: boolean}
+        traceId: {type: string}
+        durationMs: {type: number}
+  requestBodies:
+    EmailRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [email_id], properties: {email_id: {type: string, format: uuid}}}}}]}}}
+    ThreadRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [thread_id], properties: {thread_id: {type: string, format: uuid}}}}}]}}}
+    SearchRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [query], properties: {query: {type: string}, limit: {type: integer, default: 10}}}}}]}}}
+    RelatedRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [email_id, query], properties: {email_id: {type: string, format: uuid}, query: {type: string}, top_k: {type: integer, default: 4}}}}}]}}}
+    PreferencesRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object}}}]}}}
+    TaskRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [title], properties: {email_id: {type: string, format: uuid}, title: {type: string}, description: {type: string}, priority: {type: string, enum: [low, normal, high]}, due_at: {type: string, format: date-time}}}}}]}}}
+    DraftRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [email_id, subject, body], properties: {email_id: {type: string, format: uuid}, subject: {type: string}, body: {type: string}, tone: {type: string, enum: [professional, friendly, concise, formal]}, language: {type: string}}}}}]}}}
+    CalendarWindowRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [starts_at, ends_at], properties: {starts_at: {type: string, format: date-time}, ends_at: {type: string, format: date-time}}}}}]}}}
+    CalendarDraftRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [title, starts_at, timezone, evidence], properties: {email_id: {type: string, format: uuid}, title: {type: string}, description: {type: string}, starts_at: {type: string, format: date-time}, ends_at: {type: string, format: date-time}, timezone: {type: string}, location: {type: string}, attendees: {type: array, items: {type: string}}, evidence: {type: string}}}}}]}}}
+    CalendarApprovalRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [draft_id, approval_id, payload_hash], properties: {draft_id: {type: string, format: uuid}, approval_id: {type: string, format: uuid}, payload_hash: {type: string, minLength: 64, maxLength: 64}}}}}]}}}
+    GetCalendarEventRequest:
+      required: true
+      content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/Envelope'}, {properties: {arguments: {type: object, required: [draft_id], properties: {draft_id: {type: string, format: uuid}}}}}]}}}
+  responses:
+    ToolResult:
+      description: Structured success or failure result
+      content: {application/json: {schema: {$ref: '#/components/schemas/ToolResult'}}}
