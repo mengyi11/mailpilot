@@ -6,7 +6,11 @@ from cryptography.fernet import Fernet
 from app.core.config import Settings
 from app.core.crypto import TokenCipher
 from app.core.errors import AppError
-from app.services.google_oauth import GoogleOAuthService, OAuthStateManager
+from app.services.google_oauth import (
+    GoogleOAuthService,
+    OAuthStateManager,
+    connection_metadata,
+)
 
 
 def test_oauth_state_round_trip_and_tamper_rejection() -> None:
@@ -44,3 +48,22 @@ def test_authorization_url_requests_only_backend_scope() -> None:
     assert "gmail.readonly" in url
     assert "access_type=offline" in url
     assert "client-secret" not in url
+
+
+def test_reconnect_preserves_last_committed_gmail_cursor() -> None:
+    metadata = connection_metadata(
+        {"history_id": "old-cursor", "last_sync_mode": "incremental"},
+        {"historyId": "current-google-cursor"},
+        is_new=False,
+    )
+
+    assert metadata["history_id"] == "old-cursor"
+    assert metadata["last_sync_mode"] == "incremental"
+
+
+def test_new_connection_uses_google_profile_cursor() -> None:
+    metadata = connection_metadata(
+        {}, {"historyId": "initial-cursor"}, is_new=True
+    )
+
+    assert metadata == {"history_id": "initial-cursor"}

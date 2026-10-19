@@ -20,6 +20,18 @@ GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 GMAIL_PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
 
 
+def connection_metadata(
+    existing: dict[str, object], profile: dict[str, str], *, is_new: bool
+) -> dict[str, object]:
+    """Keep the last committed Gmail cursor when an account reconnects."""
+    if is_new:
+        return {"history_id": profile.get("historyId")}
+    return {
+        **existing,
+        "history_id": existing.get("history_id") or profile.get("historyId"),
+    }
+
+
 @dataclass(frozen=True)
 class GoogleTokenSet:
     access_token: str
@@ -150,7 +162,7 @@ class GoogleOAuthService:
                 email_address=email_address,
                 sync_status="connected",
                 scopes=tokens.scopes,
-                provider_metadata={"history_id": profile.get("historyId")},
+                provider_metadata=connection_metadata({}, profile, is_new=True),
             )
             db.add(account)
             db.flush()
@@ -159,7 +171,15 @@ class GoogleOAuthService:
             account.email_address = email_address
             account.sync_status = "connected"
             account.scopes = tokens.scopes
-            account.provider_metadata = {"history_id": profile.get("historyId")}
+            # Re-authorizing an existing account must not jump the Gmail cursor
+            # to "now". Doing so would skip every message created between the
+            # previous successful sync and the reconnect. Preserve the last
+            # committed cursor; a brand-new account still starts with the
+            # profile cursor and performs an initial full sync because it has
+            # no last_synced_at value.
+            account.provider_metadata = connection_metadata(
+                account.provider_metadata, profile, is_new=False
+            )
 
         credential = account.oauth_credential
         if credential is None:
