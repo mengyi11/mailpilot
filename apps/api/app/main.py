@@ -11,6 +11,7 @@ from app.api.demo import router as demo_router
 from app.api.google_auth import router as google_auth_router
 from app.api.gmail import router as gmail_router
 from app.api.translation import router as translation_router
+from app.api.rag import router as rag_router
 from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.logging import configure_logging
@@ -55,6 +56,7 @@ def create_app() -> FastAPI:
     application.include_router(google_auth_router)
     application.include_router(gmail_router)
     application.include_router(translation_router)
+    application.include_router(rag_router)
 
     @application.middleware("http")
     async def request_context(request: Request, call_next):
@@ -65,6 +67,15 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         duration_ms = round((perf_counter() - started_at) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
+        # Chromium may require Private Network Access permission when the
+        # frontend and API use different localhost ports. Only approve an
+        # explicitly configured MailPilot origin; never reflect arbitrary origins.
+        origin = request.headers.get("Origin")
+        if (
+            request.headers.get("Access-Control-Request-Private-Network") == "true"
+            and origin in settings.cors_origins
+        ):
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
 
         logger.info(
             "request_completed",

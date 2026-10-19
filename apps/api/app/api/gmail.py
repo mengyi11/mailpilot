@@ -13,7 +13,8 @@ from app.db.models.email import Email
 from app.db.models.identity import EmailAccount
 from app.db.models.productivity import CalendarDraft
 from app.db.session import get_db
-from app.services.gmail_sync import GmailSyncResult, GmailSyncService
+from app.services.gmail_sync import GmailSyncService
+from app.services.rag import EmbeddingClient, RagService
 
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
@@ -88,6 +89,7 @@ class SyncResponse(ApiModel):
     failed: int
     mode: str
     history_id: str | None
+    rag_indexed: int = 0
 
 
 def _connected_account(db: Session) -> EmailAccount:
@@ -109,13 +111,120 @@ def _connected_account(db: Session) -> EmailAccount:
     return account
 
 
+def _single_email_response(db: Session, email: Email) -> GmailEmail:
+    saved_translation = db.scalar(
+        select(TranslationModel)
+        .where(TranslationModel.email_id == email.id)
+        .order_by(TranslationModel.created_at.desc())
+    )
+    saved_analysis = db.scalar(
+        select(EmailAnalysis)
+        .where(EmailAnalysis.email_id == email.id)
+        .order_by(EmailAnalysis.created_at.desc())
+    )
+    drafts = (
+        db.scalars(
+            select(CalendarDraft)
+            .where(CalendarDraft.analysis_id == saved_analysis.id)
+            .order_by(CalendarDraft.starts_at)
+        ).all()
+        if saved_analysis
+        else []
+    )
+    recipients = email.recipients.get("to", []) + email.recipients.get("cc", [])
+    return GmailEmail(
+        id=str(email.id),
+        subject=email.subject or "(no subject)",
+        sender=EmailAddress(**email.sender),
+        preview=email.snippet or "",
+        received_at=email.received_at,
+        is_read=email.is_read,
+        is_starred=email.is_starred,
+        labels=email.labels,
+        priority="high" if "IMPORTANT" in email.labels else "normal",
+        recipients=[EmailAddress(**item) for item in recipients],
+        body_text=email.body_text or email.snippet or "",
+        body_html=email.body_html,
+        ai_overview=AiOverview(
+            summary=(
+                saved_analysis.summary
+                if saved_analysis and saved_analysis.summary
+                else "尚未运行AI分析。邮件已从Gmail安全同步。"
+            ),
+            summary_en=(
+                saved_analysis.structured_output.get("summary_en")
+                if saved_analysis
+                else None
+            ),
+            summary_zh=(
+                saved_analysis.structured_output.get("summary_zh")
+                if saved_analysis
+                else None
+            ),
+            category=(saved_analysis.category if saved_analysis else "待分析"),
+            priority="high" if "IMPORTANT" in email.labels else "normal",
+            confidence=(
+                float(saved_analysis.confidence)
+                if saved_analysis and saved_analysis.confidence is not None
+                else 0
+            ),
+        ),
+        translation=Translation(
+            source_language=(saved_translation.source_language if saved_translation else "unknown"),
+            target_language=(saved_translation.target_language if saved_translation else "简体中文"),
+            translated_body=(saved_translation.translated_body if saved_translation else ""),
+            translated_html=(saved_translation.translated_html if saved_translation else None),
+            ocr_blocks=(saved_translation.ocr_blocks if saved_translation else []),
+            status="completed" if saved_translation else "pending",
+        ),
+        action_items=[],
+        calendar_drafts=[
+            {
+                "id": str(draft.id),
+                "title": draft.title,
+                "startsAt": draft.starts_at,
+                "endsAt": draft.ends_at,
+                "timezone": draft.timezone,
+                "location": draft.location,
+                "evidence": draft.source_evidence.get("text", ""),
+                "status": draft.status,
+            }
+            for draft in drafts
+        ],
+        reply_draft=ReplyDraft(
+            subject=f"Re: {email.subject or ''}", body="", tone="未生成", language="unknown"
+        ),
+    )
+
+
 @router.post("/sync", response_model=SyncResponse, summary="Sync up to 15 Gmail messages")
 async def sync_gmail(
     limit: int = Query(default=15, ge=1, le=15),
     db: Session = Depends(get_db),
-) -> GmailSyncResult:
+) -> SyncResponse:
     account = _connected_account(db)
-    return await GmailSyncService(get_settings()).sync(db, account, limit=limit)
+    settings = get_settings()
+    result = await GmailSyncService(settings).sync(db, account, limit=limit)
+    rag_indexed = 0
+    if result.created or result.updated:
+        recent_email_ids = db.scalars(
+            select(Email.id)
+            .where(Email.email_account_id == account.id)
+            .order_by(Email.received_at.desc())
+            .limit(limit)
+        ).all()
+        rag = RagService(settings, EmbeddingClient(settings))
+        for email_id in recent_email_ids:
+            try:
+                await rag.index_email(
+                    db, user_id=account.user_id, email_id=email_id
+                )
+                rag_indexed += 1
+            except AppError:
+                # Mail sync remains successful if the optional search index is
+                # temporarily unavailable. The batch index script can retry it.
+                db.rollback()
+    return SyncResponse(**result.__dict__, rag_indexed=rag_indexed)
 
 
 @router.get("/emails", response_model=list[GmailEmail], summary="List synchronized Gmail messages")
@@ -257,3 +366,28 @@ async def list_gmail_emails(
             )
         )
     return response
+
+
+@router.get(
+    "/emails/{email_id}",
+    response_model=GmailEmail,
+    summary="Open one synchronized Gmail message",
+)
+async def get_gmail_email(
+    email_id: UUID,
+    db: Session = Depends(get_db),
+) -> GmailEmail:
+    account = _connected_account(db)
+    email = db.scalar(
+        select(Email).where(
+            Email.id == email_id,
+            Email.email_account_id == account.id,
+        )
+    )
+    if email is None:
+        raise AppError(
+            code="EMAIL_NOT_FOUND",
+            message="The email was not found in the connected Gmail account.",
+            status_code=404,
+        )
+    return _single_email_response(db, email)

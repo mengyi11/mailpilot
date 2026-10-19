@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     dify_api_key: str = ""
     dify_translate_api_key: str = ""
     dify_repair_api_key: str = ""
+    dify_rag_api_key: str = ""
     dify_mock_mode: bool = True
     dify_max_input_chars: int = 8000
     dify_app_id: str = "f18db7c0-9734-4d64-a0c4-110293778873"
@@ -47,6 +48,16 @@ class Settings(BaseSettings):
     dify_fast_model: str = "gpt-5-mini"
     dify_strong_model: str = "gpt-5"
     dify_embedding_model: str = "text-embedding-3-small"
+    embedding_api_url: str = "https://api.openai.com/v1/embeddings"
+    embedding_api_key: str = ""
+    rag_embedding_mock_mode: bool = True
+    rag_chunk_size_chars: int = 1800
+    rag_chunk_overlap_chars: int = 240
+    rag_default_top_k: int = 4
+    rag_max_top_k: int = 5
+    rag_min_similarity: float = 0.30
+    rag_tool_api_key: str = ""
+    rag_answer_max_context_chars: int = 6000
 
 
 @lru_cache

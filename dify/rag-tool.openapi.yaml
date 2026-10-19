@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: MailPilot Email History RAG Tool
+  version: 1.0.0
+  description: Retrieves only evidence-backed email chunks owned by the current user.
+servers:
+  # Replace with the deployed HTTPS FastAPI URL. Dify Cloud cannot call localhost.
+  - url: https://YOUR-MAILPILOT-API.example.com
+paths:
+  /rag/search:
+    post:
+      operationId: searchEmailHistory
+      summary: Search the current user's historical email evidence
+      description: Returns 3-5 source chunks and citations. If no_results is true, do not answer from memory and do not invent citations.
+      parameters:
+        - in: header
+          name: X-RAG-Tool-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagSearchRequest'
+      responses:
+        '200':
+          description: Evidence and citations, or an explicit no-results response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagSearchResponse'
+components:
+  schemas:
+    RagSearchRequest:
+      type: object
+      required: [user_id, query]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        scope:
+          type: string
+          enum: [semantic, current_thread, same_sender]
+          default: semantic
+        email_id:
+          type: string
+          format: uuid
+        thread_id:
+          type: string
+          format: uuid
+        sender:
+          type: string
+        top_k:
+          type: integer
+          minimum: 3
+          maximum: 5
+          default: 4
+    RagSearchResponse:
+      type: object
+      required: [answer_context, citations, result_count, no_results]
+      properties:
+        answer_context:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        result_count:
+          type: integer
+        no_results:
+          type: boolean
+        message:
+          type: string
+          nullable: true
+    Citation:
+      type: object
+      required: [citation_id, chunk_id, email_id, subject, sender, sent_at, excerpt, similarity]
+      properties:
+        citation_id: {type: string}
+        chunk_id: {type: string, format: uuid}
+        email_id: {type: string, format: uuid}
+        thread_id: {type: string, format: uuid, nullable: true}
+        subject: {type: string}
+        sender: {type: string}
+        sent_at: {type: string, format: date-time}
+        excerpt: {type: string}
+        similarity: {type: number, minimum: 0, maximum: 1}
