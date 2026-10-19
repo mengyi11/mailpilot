@@ -13,6 +13,6 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./apps/web/.next/static
+COPY --from=builder /app/.next/static ./app/.next/static
 EXPOSE 3000
 CMD ["node", "app/server.js"]
