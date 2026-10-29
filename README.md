@@ -1,6 +1,16 @@
 # mailpilot
 AI Email-to-Action Agent powered by Dify, FastAPI and Next.js
 
+## Local port allocation
+
+| Project | Frontend | Backend |
+| --- | --- | --- |
+| MailPilot | http://localhost:3000 | FastAPI: http://localhost:8000 |
+| SmartStep | http://localhost:3001 | Integrated Vinext/Cloudflare Worker: http://localhost:3001 |
+
+SmartStep does not run a separate FastAPI service. Keep port 8000 reserved for
+MailPilot; its frontend API URL and Google OAuth callback use that port.
+
 ## One-command local stack
 
 Copy `apps/api/.env.example` to `apps/api/.env`, then start the complete
